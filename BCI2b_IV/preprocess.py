@@ -85,6 +85,7 @@ def load_BCI2b_data(data_path, subject, training, all_trials=True):
 
         # Caricamento dati EEG
         raw = mne.io.read_raw_gdf(gdf_file, preload=True)
+        raw.filter(l_freq=0.5, h_freq=100)  # Filtraggio passa banda
         #print(f"Canali disponibili nel file: {raw.ch_names}")
 
         # Normalizza i nomi dei canali rimuovendo il prefisso 'EEG:'
