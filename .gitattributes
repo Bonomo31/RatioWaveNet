@@ -1,0 +1,2 @@
+HGD/None_RDWT_ATCNet_HGD_LOSO.ipynb filter=lfs diff=lfs merge=lfs -text
+HGD/RatioWaveNet_None_RDWT_HGD_LOSO.ipynb filter=lfs diff=lfs merge=lfs -text
