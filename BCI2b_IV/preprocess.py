@@ -11,7 +11,7 @@ from tensorflow.keras.utils import to_categorical # type: ignore
 
 def load_data_LOSO(data_path,subject,dataset):
     X_train, y_train = [], []
-    for sub in range (0,14):
+    for sub in range (0,9):
         #path = data_path+'s' + str(sub+1) + '/'
         path = data_path+'/'
         if (dataset == 'BCI2a'):

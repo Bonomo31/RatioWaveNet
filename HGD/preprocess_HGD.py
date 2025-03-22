@@ -21,12 +21,18 @@ Author:  Hamdi Altaheri
 import numpy as np
 import logging
 from collections import OrderedDict
-from braindecode.datasets.bbci import BBCIDataset
-from braindecode.datautil.trial_segment import \
-    create_signal_target_from_raw_mne
-from braindecode.mne_ext.signalproc import mne_apply, resample_cnt
-from braindecode.datautil.signalproc import exponential_running_standardize
-from braindecode.datautil.signalproc import highpass_cnt
+
+#Importo le funzioni dalla cartella libreria_braindecode locale
+from libreria_braindecode.bbci import BBCIDataset
+from libreria_braindecode.trial_segment import create_signal_target_from_raw_mne
+from libreria_braindecode.signalproc import resample_cnt
+
+#from braindecode.datasets.bbci import BBCIDataset
+#from braindecode.datautil.trial_segment import \
+#    create_signal_target_from_raw_mne
+#from braindecode.mne_ext.signalproc import mne_apply, resample_cnt
+#from braindecode.datautil.signalproc import exponential_running_standardize
+#from braindecode.datautil.signalproc import highpass_cnt
 
 #%%
 def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
