@@ -126,6 +126,288 @@ def RockNet_(n_classes, in_chans = 22, in_samples = 1125, n_windows = 5, attenti
 
     return Model(inputs = input_1, outputs = out)
 
+
+#%% RockNetA model
+def RockNetA(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mha',
+             eegn_F1=16, eegn_D=2, eegn_kernelSize=64, eegn_poolSize=7, eegn_dropout=0.5,
+             tcn_depth=2, tcn_kernelSize=4, tcn_filters=32, tcn_dropout=0.3,
+             tcn_activation='elu', fuse='average'):
+
+    input_1 = Input(shape=(1, in_chans, in_samples))
+    input_2 = Permute((3, 2, 1))(input_1)
+
+    dense_weightDecay = 0.5
+    conv_weightDecay = 0.009
+    conv_maxNorm = 0.6
+    from_logits = False
+
+    numFilters = eegn_F1
+    F2 = numFilters * eegn_D
+
+    block1 = Conv_block_(input_layer=input_2, F1=eegn_F1, D=eegn_D,
+                         kernLength=eegn_kernelSize, poolSize=eegn_poolSize,
+                         weightDecay=conv_weightDecay, maxNorm=conv_maxNorm,
+                         in_chans=in_chans, dropout=eegn_dropout)
+    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)
+
+    sw_concat = []
+    for i in range(n_windows):
+        st = i
+        end = block1.shape[1] - n_windows + i + 1
+        block2 = block1[:, st:end, :]
+
+        if attention is not None:
+            if attention in ['se', 'cbam']:
+                block2 = Permute((2, 1))(block2)
+                block2 = attention_block(block2, attention)
+                block2 = Permute((2, 1))(block2)
+            else:
+                block2 = attention_block(block2, attention)
+
+        block3 = TCN_block_(input_layer=block2, input_dimension=F2, depth=tcn_depth,
+                            kernel_size=tcn_kernelSize, filters=tcn_filters,
+                            weightDecay=conv_weightDecay, maxNorm=conv_maxNorm,
+                            dropout=tcn_dropout, activation=tcn_activation)
+        block3 = Lambda(lambda x: x[:, -1, :])(block3)
+
+        if fuse == 'average':
+            sw_concat.append(Dense(n_classes, kernel_regularizer=L2(dense_weightDecay))(block3))
+        elif fuse == 'concat':
+            if i == 0:
+                sw_concat = block3
+            else:
+                sw_concat = Concatenate()([sw_concat, block3])
+
+    if fuse == 'average':
+        if len(sw_concat) > 1:
+            sw_concat = tf.keras.layers.Average()(sw_concat[:])
+        else:
+            sw_concat = sw_concat[0]
+    elif fuse == 'concat':
+        sw_concat = Dense(n_classes, kernel_regularizer=L2(dense_weightDecay))(sw_concat)
+
+    if from_logits:
+        out = Activation('linear', name='linear')(sw_concat)
+    else:
+        out = Activation('softmax', name='softmax')(sw_concat)
+
+    return Model(inputs=input_1, outputs=out)
+
+#%% RockNetB model
+def RockNetB(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mha',
+             eegn_F1=16, eegn_D=2, eegn_kernelSize=64, eegn_poolSize=7, eegn_dropout=0.5,
+             tcn_depth=2, tcn_kernelSize=4, tcn_filters=32, tcn_dropout=0.3,
+             tcn_activation='elu', fuse='average'):
+
+    input_1 = Input(shape=(1, in_chans, in_samples))
+    input_2 = Permute((3, 2, 1))(input_1)
+
+    dense_weightDecay = 0.5
+    conv_weightDecay = 0.009
+    conv_maxNorm = 0.6
+    from_logits = False
+
+    numFilters = eegn_F1
+    F2 = numFilters * eegn_D
+
+    block1 = Conv_block_(input_layer=input_2, F1=eegn_F1, D=eegn_D,
+                         kernLength=eegn_kernelSize, poolSize=eegn_poolSize,
+                         weightDecay=conv_weightDecay, maxNorm=conv_maxNorm,
+                         in_chans=in_chans, dropout=eegn_dropout)
+    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)
+
+    sw_concat = []
+    for i in range(n_windows):
+        st = i
+        end = block1.shape[1] - n_windows + i + 1
+        block2 = block1[:, st:end, :]
+
+        if attention is not None:
+            if attention in ['se', 'cbam']:
+                block2 = Permute((2, 1))(block2)
+                block2 = attention_block(block2, attention)
+                block2 = Permute((2, 1))(block2)
+            else:
+                block2 = attention_block(block2, attention)
+
+        block3 = TCN_block_(input_layer=block2, input_dimension=F2, depth=tcn_depth,
+                            kernel_size=tcn_kernelSize, filters=tcn_filters,
+                            weightDecay=conv_weightDecay, maxNorm=conv_maxNorm,
+                            dropout=tcn_dropout, activation=tcn_activation)
+        block3 = Lambda(lambda x: x[:, -1, :])(block3)
+
+        if fuse == 'average':
+            sw_concat.append(Dense(n_classes, kernel_regularizer=L2(dense_weightDecay))(block3))
+        elif fuse == 'concat':
+            if i == 0:
+                sw_concat = block3
+            else:
+                sw_concat = Concatenate()([sw_concat, block3])
+
+    if fuse == 'average':
+        if len(sw_concat) > 1:
+            sw_concat = tf.keras.layers.Average()(sw_concat[:])
+        else:
+            sw_concat = sw_concat[0]
+    elif fuse == 'concat':
+        sw_concat = Dense(n_classes, kernel_regularizer=L2(dense_weightDecay))(sw_concat)
+
+    if from_logits:
+        out = Activation('linear', name='linear')(sw_concat)
+    else:
+        out = Activation('softmax', name='softmax')(sw_concat)
+
+    return Model(inputs=input_1, outputs=out)
+
+#%% RockNetC model
+def RockNetC(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mha',
+             eegn_F1=16, eegn_D=2, eegn_kernelSize=64, eegn_poolSize=7, eegn_dropout=0.5,
+             tcn_depth=2, tcn_kernelSize=4, tcn_filters=32, tcn_dropout=0.3,
+             tcn_activation='elu', fuse='average'):
+
+    input_1 = Input(shape=(1, in_chans, in_samples))
+    input_2 = Permute((3, 2, 1))(input_1)
+
+    dense_weightDecay = 0.5
+    conv_weightDecay = 0.009
+    conv_maxNorm = 0.6
+    from_logits = False
+
+    numFilters = eegn_F1
+    F2 = numFilters * eegn_D
+
+    block1 = Conv_block_(input_layer=input_2, F1=eegn_F1, D=eegn_D,
+                         kernLength=eegn_kernelSize, poolSize=eegn_poolSize,
+                         weightDecay=conv_weightDecay, maxNorm=conv_maxNorm,
+                         in_chans=in_chans, dropout=eegn_dropout)
+    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)
+
+    sw_concat = []
+    for i in range(n_windows):
+        st = i
+        end = block1.shape[1] - n_windows + i + 1
+        block2 = block1[:, st:end, :]
+
+        if attention is not None:
+            if attention in ['se', 'cbam']:
+                block2 = Permute((2, 1))(block2)
+                block2 = attention_block(block2, attention)
+                block2 = Permute((2, 1))(block2)
+            else:
+                block2 = attention_block(block2, attention)
+
+        block3 = TCN_block_(input_layer=block2, input_dimension=F2, depth=tcn_depth,
+                            kernel_size=tcn_kernelSize, filters=tcn_filters,
+                            weightDecay=conv_weightDecay, maxNorm=conv_maxNorm,
+                            dropout=tcn_dropout, activation=tcn_activation)
+        block3 = Lambda(lambda x: x[:, -1, :])(block3)
+
+        if fuse == 'average':
+            sw_concat.append(Dense(n_classes, kernel_regularizer=L2(dense_weightDecay))(block3))
+        elif fuse == 'concat':
+            if i == 0:
+                sw_concat = block3
+            else:
+                sw_concat = Concatenate()([sw_concat, block3])
+
+    if fuse == 'average':
+        if len(sw_concat) > 1:
+            sw_concat = tf.keras.layers.Average()(sw_concat[:])
+        else:
+            sw_concat = sw_concat[0]
+    elif fuse == 'concat':
+        sw_concat = Dense(n_classes, kernel_regularizer=L2(dense_weightDecay))(sw_concat)
+
+    if from_logits:
+        out = Activation('linear', name='linear')(sw_concat)
+    else:
+        out = Activation('softmax', name='softmax')(sw_concat)
+
+    return Model(inputs=input_1, outputs=out)
+
+#%% RockNetX model
+
+def RockNetX(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='transformer',
+             eegn_F1=16, eegn_D=2, eegn_kernelSize=64, eegn_poolSize=7, eegn_dropout=0.5,
+             tcn_depth=3, tcn_kernelSize=4, tcn_filters=64, tcn_dropout=0.3,
+             tcn_activation='gelu', fuse='average'):
+    """ Variant with Graph Convolutions and Transformer Attention """
+    input_1 = Input(shape=(1, in_chans, in_samples))
+    input_2 = Permute((3, 2, 1))(input_1)
+    
+    block1 = GCN_block(input_2, in_chans, eegn_F1, eegn_D)  # Graph Convolution Layer
+    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)
+    
+    sw_concat = []
+    for i in range(n_windows):
+        block2 = block1[:, i:block1.shape[1] - n_windows + i + 1, :]
+        block2 = transformer_attention(block2)  # Transformer Attention instead of SE/CBAM
+        
+        block3 = TCN_block_(block2, eegn_F1 * eegn_D, tcn_depth, tcn_kernelSize,
+                            tcn_filters, 0.009, 0.6, tcn_dropout, tcn_activation)
+        block3 = Lambda(lambda x: x[:, -1, :])(block3)
+        
+        sw_concat.append(Dense(n_classes, kernel_regularizer=L2(0.5))(block3))
+    
+    out = Activation('softmax')(tf.keras.layers.Average()(sw_concat))
+    return Model(inputs=input_1, outputs=out)
+
+#%% RockNetY model
+
+def RockNetY(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mha',
+             eegn_F1=16, eegn_D=2, eegn_kernelSize=64, eegn_poolSize=7, eegn_dropout=0.5,
+             tcn_depth=2, tcn_kernelSize=4, tcn_filters=32, tcn_dropout=0.3,
+             tcn_activation='elu', fuse='attention'):
+    """ Variant with Multi-scale Convolution and Adaptive Fusion """
+    input_1 = Input(shape=(1, in_chans, in_samples))
+    input_2 = Permute((3, 2, 1))(input_1)
+    
+    block1 = MultiScaleConv_block(input_2, eegn_F1, eegn_kernelSize)  # Multi-scale convolutions
+    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)
+    
+    sw_concat = []
+    for i in range(n_windows):
+        block2 = block1[:, i:block1.shape[1] - n_windows + i + 1, :]
+        block2 = attention_block(block2, attention)
+        
+        block3 = TCN_block_(block2, eegn_F1 * eegn_D, tcn_depth, tcn_kernelSize,
+                            tcn_filters, 0.009, 0.6, tcn_dropout, tcn_activation)
+        block3 = Lambda(lambda x: x[:, -1, :])(block3)
+        
+        sw_concat.append(block3)
+    
+    fused_out = AdaptiveAttentionFusion(sw_concat)  # Adaptive fusion instead of average
+    out = Activation('softmax')(Dense(n_classes, kernel_regularizer=L2(0.5))(fused_out))
+    return Model(inputs=input_1, outputs=out)
+
+#%% RockNetZ model
+
+def RockNetZ(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mha',
+             eegn_F1=16, eegn_D=2, eegn_kernelSize=64, eegn_poolSize=7, eegn_dropout=0.5,
+             tcn_depth=2, tcn_kernelSize=4, tcn_filters=32, tcn_dropout=0.3,
+             tcn_activation='relu', fuse='average'):
+    """ Optimized lightweight variant with Depthwise Separable Convolutions """
+    input_1 = Input(shape=(1, in_chans, in_samples))
+    input_2 = Permute((3, 2, 1))(input_1)
+    
+    block1 = DepthwiseConv_block(input_2, eegn_F1, eegn_kernelSize, eegn_poolSize)  # Lightweight convolution
+    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)
+    
+    sw_concat = []
+    for i in range(n_windows):
+        block2 = block1[:, i:block1.shape[1] - n_windows + i + 1, :]
+        block2 = attention_block(block2, attention)
+        
+        block3 = EfficientTCN_block(block2, eegn_F1 * eegn_D, tcn_depth, tcn_kernelSize,
+                                    tcn_filters, tcn_dropout, tcn_activation)  # Optimized TCN
+        block3 = Lambda(lambda x: x[:, -1, :])(block3)
+        
+        sw_concat.append(Dense(n_classes, kernel_regularizer=L2(0.5))(block3))
+    
+    out = Activation('softmax')(tf.keras.layers.Average()(sw_concat))
+    return Model(inputs=input_1, outputs=out)
+
+
 #%% The proposed ATCNet model, https://doi.org/10.1109/TII.2022.3197419
 def ATCNet_(n_classes, in_chans = 22, in_samples = 1125, n_windows = 5, attention = 'mha',
            eegn_F1 = 16, eegn_D = 2, eegn_kernelSize = 64, eegn_poolSize = 7, eegn_dropout=0.3,
