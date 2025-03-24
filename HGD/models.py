@@ -325,6 +325,51 @@ def RockNetC(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mh
 
     return Model(inputs=input_1, outputs=out)
 
+#%% Definitions 
+def GCN_block(input_tensor, in_chans, F1, D):
+    """ Graph Convolution Network Block """
+    conv1 = Conv2D(F1, (1, 1), activation='relu', padding='same')(input_tensor)
+    conv2 = Conv2D(F1 * D, (1, 1), activation='relu', padding='same')(conv1)
+    return conv2
+
+def transformer_attention(input_tensor):
+    """ Transformer-style Self-Attention """
+    attn = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=32)(input_tensor, input_tensor)
+    return attn + input_tensor  # Residual connection
+
+def MultiScaleConv_block(input_tensor, F1, kernel_size):
+    """ Multi-Scale Convolution Block """
+    conv1 = Conv2D(F1, (1, kernel_size), activation='relu', padding='same')(input_tensor)
+    conv2 = Conv2D(F1, (1, kernel_size//2), activation='relu', padding='same')(input_tensor)
+    conv3 = Conv2D(F1, (1, kernel_size//4), activation='relu', padding='same')(input_tensor)
+    return Concatenate()([conv1, conv2, conv3])
+
+def TCN_block_(input_layer, input_dimension, depth, kernel_size, filters, weightDecay, maxNorm, dropout, activation):
+    """ Temporal Convolution Network Block """
+    x = input_layer
+    for _ in range(depth):
+        x = Conv2D(filters, (1, kernel_size), activation=activation, padding='same')(x)
+        x = tf.keras.layers.Dropout(dropout)(x)
+    return x
+
+def AdaptiveAttentionFusion(inputs):
+    """ Adaptive Attention Fusion for Sliding Windows """
+    weights = [Dense(1, activation='softmax')(inp) for inp in inputs]
+    fused_output = tf.add_n([w * inp for w, inp in zip(weights, inputs)])
+    return fused_output
+
+def DepthwiseConv_block(input_tensor, F1, kernel_size, pool_size):
+    """ Lightweight Depthwise Separable Convolution """
+    conv = DepthwiseConv2D((1, kernel_size), activation='relu', padding='same')(input_tensor)
+    return Conv2D(F1, (1, 1), activation='relu', padding='same')(conv)
+
+def EfficientTCN_block(input_layer, input_dimension, depth, kernel_size, filters, dropout, activation):
+    """ Optimized Temporal Convolution Network Block """
+    x = input_layer
+    for _ in range(depth):
+        x = DepthwiseConv2D((1, kernel_size), activation=activation, padding='same')(x)
+        x = tf.keras.layers.Dropout(dropout)(x)
+    return x
 #%% RockNetX model
 
 def RockNetX(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='transformer',
