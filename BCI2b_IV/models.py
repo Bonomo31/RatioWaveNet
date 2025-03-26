@@ -31,7 +31,7 @@ from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import Dense, Dropout, Activation, AveragePooling2D, MaxPooling2D
 from tensorflow.keras.layers import Conv1D, Conv2D, SeparableConv2D, DepthwiseConv2D
 from tensorflow.keras.layers import BatchNormalization, LayerNormalization, Flatten
-from tensorflow.keras.layers import Add, Concatenate, Lambda, Input, Permute
+from tensorflow.keras.layers import Add, Concatenate, Lambda, Input, Permute, Multiply
 from tensorflow.keras.regularizers import L2
 from tensorflow.keras.constraints import max_norm
 
@@ -345,31 +345,52 @@ def MultiScaleConv_block(input_tensor, F1, kernel_size):
     conv3 = Conv2D(F1, (1, kernel_size//4), activation='relu', padding='same')(input_tensor)
     return Concatenate()([conv1, conv2, conv3])
 
-def TCN_block_(input_layer, input_dimension, depth, kernel_size, filters, weightDecay, maxNorm, dropout, activation):
-    """ Temporal Convolution Network Block """
+"""def TCN_block_(input_layer, input_dimension, depth, kernel_size, filters, weightDecay, maxNorm, dropout, activation):
+    #Temporal Convolution Network Block 
     x = input_layer
     for _ in range(depth):
         x = Conv2D(filters, (1, kernel_size), activation=activation, padding='same')(x)
         x = tf.keras.layers.Dropout(dropout)(x)
-    return x
+    return x"""
 
 def AdaptiveAttentionFusion(inputs):
     """ Adaptive Attention Fusion for Sliding Windows """
+    # Calcola i pesi di attenzione
     weights = [Dense(1, activation='softmax')(inp) for inp in inputs]
-    fused_output = tf.add_n([w * inp for w, inp in zip(weights, inputs)])
+
+    # Moltiplica ogni input per il rispettivo peso
+    weighted_inputs = [Multiply()([w, inp]) for w, inp in zip(weights, inputs)]
+
+    # Somma i tensori pesati
+    fused_output = Add()(weighted_inputs)
+
     return fused_output
 
 def DepthwiseConv_block(input_tensor, F1, kernel_size, pool_size):
     """ Lightweight Depthwise Separable Convolution """
+    # Espandi la dimensione se necessario
+    if len(input_tensor.shape) == 3:  # Controlla se il tensore è 3D
+        input_tensor = tf.expand_dims(input_tensor, axis=-1)  # Aggiungi una dimensione per i canali
+
     conv = DepthwiseConv2D((1, kernel_size), activation='relu', padding='same')(input_tensor)
     return Conv2D(F1, (1, 1), activation='relu', padding='same')(conv)
 
 def EfficientTCN_block(input_layer, input_dimension, depth, kernel_size, filters, dropout, activation):
     """ Optimized Temporal Convolution Network Block """
     x = input_layer
+
+    # Espandi la dimensione se il tensore è 3D
+    if len(x.shape) == 3:  # Controlla se il tensore ha solo 3 dimensioni
+        x = tf.keras.layers.Lambda(lambda t: tf.expand_dims(t, axis=-1))(x)  # Aggiungi una dimensione per i canali
+
     for _ in range(depth):
         x = DepthwiseConv2D((1, kernel_size), activation=activation, padding='same')(x)
         x = tf.keras.layers.Dropout(dropout)(x)
+
+    # Riduci la dimensione temporale/spaziale se necessario
+    if len(x.shape) > 3:  # Controlla se il tensore ha più di 3 dimensioni
+        x = tf.keras.layers.Lambda(lambda t: tf.reduce_mean(t, axis=1))(x)  # Riduci lungo l'asse temporale
+
     return x
 
 #%% RockNetX model
@@ -407,23 +428,41 @@ def RockNetY(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mh
              tcn_activation='elu', fuse='attention'):
     """ Variant with Multi-scale Convolution and Adaptive Fusion """
     input_1 = Input(shape=(1, in_chans, in_samples))
-    input_2 = Permute((3, 2, 1))(input_1)
-    
-    block1 = MultiScaleConv_block(input_2, eegn_F1, eegn_kernelSize)  # Multi-scale convolutions
-    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)
-    
+    input_2 = Permute((3, 2, 1))(input_1)  # Cambia l'ordine delle dimensioni
+
+    # Multi-scale convolutions
+    block1 = MultiScaleConv_block(input_2, eegn_F1, eegn_kernelSize)
+    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)  # Riduci una dimensione
+
     sw_concat = []
     for i in range(n_windows):
+        # Estrai la finestra temporale
         block2 = block1[:, i:block1.shape[1] - n_windows + i + 1, :]
+
+        # Applica il blocco di attenzione
         block2 = attention_block(block2, attention)
-        
+
+        # Uniforma le dimensioni se necessario
+        if block2.shape[-1] != eegn_F1 * eegn_D:
+            block2 = Dense(eegn_F1 * eegn_D)(block2)
+
+        # Applica il blocco TCN
         block3 = TCN_block_(block2, eegn_F1 * eegn_D, tcn_depth, tcn_kernelSize,
                             tcn_filters, 0.009, 0.6, tcn_dropout, tcn_activation)
+
+        # Riduci la dimensione temporale
         block3 = Lambda(lambda x: x[:, -1, :])(block3)
-        
-        sw_concat.append(block3)
-    
-    fused_out = AdaptiveAttentionFusion(sw_concat)  # Adaptive fusion instead of average
+
+        # Aggiungi il risultato al concatenamento
+        sw_concat.append(Dense(n_classes, kernel_regularizer=L2(0.5))(block3))
+
+    # Fusione adattiva
+    if fuse == 'attention':
+        fused_out = AdaptiveAttentionFusion(sw_concat)
+    else:
+        fused_out = tf.keras.layers.Average()(sw_concat)
+
+    # Livello di output
     out = Activation('softmax')(Dense(n_classes, kernel_regularizer=L2(0.5))(fused_out))
     return Model(inputs=input_1, outputs=out)
 
@@ -435,23 +474,42 @@ def RockNetZ(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mh
              tcn_activation='relu', fuse='average'):
     """ Optimized lightweight variant with Depthwise Separable Convolutions """
     input_1 = Input(shape=(1, in_chans, in_samples))
-    input_2 = Permute((3, 2, 1))(input_1)
-    
+    input_2 = Permute((3, 2, 1))(input_1)  # Cambia l'ordine delle dimensioni
+
+    # Depthwise separable convolutions
     block1 = DepthwiseConv_block(input_2, eegn_F1, eegn_kernelSize, eegn_poolSize)  # Lightweight convolution
-    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)
-    
+    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)  # Riduci una dimensione
+
     sw_concat = []
     for i in range(n_windows):
+        # Estrai la finestra temporale
         block2 = block1[:, i:block1.shape[1] - n_windows + i + 1, :]
+
+        # Applica il blocco di attenzione
         block2 = attention_block(block2, attention)
-        
+
+        # Uniforma le dimensioni se necessario
+        if block2.shape[-1] != eegn_F1 * eegn_D:
+            block2 = Dense(eegn_F1 * eegn_D)(block2)
+
+        # Applica il blocco TCN
         block3 = EfficientTCN_block(block2, eegn_F1 * eegn_D, tcn_depth, tcn_kernelSize,
-                                    tcn_filters, tcn_dropout, tcn_activation)  # Optimized TCN
+                                    tcn_filters, tcn_dropout, tcn_activation)
+
+        # Riduci la dimensione temporale
         block3 = Lambda(lambda x: x[:, -1, :])(block3)
-        
+
+        # Aggiungi il risultato al concatenamento
         sw_concat.append(Dense(n_classes, kernel_regularizer=L2(0.5))(block3))
-    
-    out = Activation('softmax')(tf.keras.layers.Average()(sw_concat))
+
+    # Fusione adattiva
+    if fuse == 'attention':
+        fused_out = AdaptiveAttentionFusion(sw_concat)
+    else:
+        fused_out = tf.keras.layers.Average()(sw_concat)
+
+    # Livello di output
+    out = Activation('softmax')(Dense(n_classes, kernel_regularizer=L2(0.5))(fused_out))
     return Model(inputs=input_1, outputs=out)
 
 #%% The proposed ATCNet model, https://doi.org/10.1109/TII.2022.3197419
