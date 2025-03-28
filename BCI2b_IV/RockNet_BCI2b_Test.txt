@@ -1,4 +1,5 @@
 RockNetA:
+
 RDWT
 1000 epoche
 
@@ -66,12 +67,24 @@ Average - all seeds (acc %): 95.94
 Inference time: 1.00 ms per trial
 ----------------------------------
 
-RDWT: 
+RDWT: 69m 32.2s
+---------------------------------
+Test performance (acc & k-score):
+---------------------------------
+                  sub_1   sub_2   sub_3   sub_4   sub_5   sub_6   sub_7   sub_8   sub_9     average
+                  -----   -----   -----   -----   -----   -----   -----   -----   -----     -------
+Seed 1: (acc %)   97.87   100.00   97.83   86.67   92.31   97.18   97.78   98.81   100.00    96.51   
+        (k-sco)   0.489   1.000   0.000   0.000   0.311   0.000   0.000   0.662   1.000     0.385   
+----------------------------------
+Average - all seeds (acc %): 96.51
+                    (k-sco): 0.385
 
-RDWT Normalized: 
+Inference time: 1.04 ms per trial
+----------------------------------
 
 
 RockNetB:
+
 RDWT
 1000 epoche
 
@@ -91,6 +104,7 @@ Inference time: 0.97 ms per trial
 
 
 RockNetC:
+
 RDWT
 1000 epoche
 
@@ -111,9 +125,11 @@ Inference time: 0.97 ms per trial
 
 RockNetX:
 RDWT
-1000 epoche
+500 epoche
+#Troppe risorse necessarie con colab occupa tutta la memoria e si blocca 
 
 RockNetY:
+
 RDWT: 90m
 500 epoche
 
@@ -133,6 +149,7 @@ Inference time: 34.37 ms per trial
 
 
 RockNetZ:
+
 RDWT: 202m 8.8s
 500 epoche
 ---------------------------------
