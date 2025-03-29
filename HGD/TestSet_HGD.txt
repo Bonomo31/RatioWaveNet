@@ -15,7 +15,7 @@ Inference time: 4.85 ms per trial
 ----------------------------------
 
 
-1000 epoche 29h
+1000 epoche -> 29h
 ---------------------------------
 Test performance (acc & k-score):
 ---------------------------------
