@@ -7,3 +7,8 @@
 /saved models/run-1/subject-7.h5
 /saved models/run-1/subject-8.h5
 /saved models/run-1/subject-9.h5
+/saved models/run-1/subject-10.h5
+/saved models/run-1/subject-11.h5
+/saved models/run-1/subject-12.h5
+/saved models/run-1/subject-13.h5
+/saved models/run-1/subject-14.h5
