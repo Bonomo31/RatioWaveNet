@@ -47,3 +47,7 @@ Average - all seeds (acc %): 92.00
 
 Inference time: 1.84 ms per trial
 ----------------------------------
+
+RockNetA con RDWT:
+miglioramento nel preprocess_HGD, aggiunta di highpassing e Standardizing
+1000 epoche -> 
