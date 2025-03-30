@@ -1,0 +1,70 @@
+
+Training on subject 1
+Subject: 1   seed 1   time: 24.6 m   valid_acc: 1.0000   valid_loss: 0.129
+
+Training on subject 2
+Subject: 2   seed 1   time: 59.3 m   valid_acc: 0.9264   valid_loss: 0.321
+
+Training on subject 3
+Subject: 3   seed 1   time: 66.6 m   valid_acc: 0.9602   valid_loss: 0.217
+
+Training on subject 4
+Subject: 4   seed 1   time: 63.5 m   valid_acc: 0.9777   valid_loss: 0.143
+
+Training on subject 5
+Subject: 5   seed 1   time: 51.5 m   valid_acc: 0.9514   valid_loss: 0.200
+
+Training on subject 6
+Subject: 6   seed 1   time: 61.5 m   valid_acc: 0.9486   valid_loss: 0.256
+
+Training on subject 7
+Subject: 7   seed 1   time: 59.3 m   valid_acc: 0.9701   valid_loss: 0.192
+
+Training on subject 8
+Subject: 8   seed 1   time: 46.9 m   valid_acc: 0.9695   valid_loss: 0.292
+
+Training on subject 9
+Subject: 9   seed 1   time: 64.6 m   valid_acc: 0.9716   valid_loss: 0.121
+
+Training on subject 10
+Subject: 10   seed 1   time: 57.6 m   valid_acc: 0.9387   valid_loss: 0.283
+
+Training on subject 11
+Subject: 11   seed 1   time: 64.7 m   valid_acc: 0.8580   valid_loss: 0.505
+
+Training on subject 12
+Subject: 12   seed 1   time: 63.4 m   valid_acc: 0.9830   valid_loss: 0.133
+
+Training on subject 13
+Subject: 13   seed 1   time: 60.7 m   valid_acc: 0.9313   valid_loss: 0.272
+
+Training on subject 14
+Subject: 14   seed 1   time: 66.8 m   valid_acc: 0.9943   valid_loss: 0.086
+
+---------------------------------
+Validation performance (acc %):
+---------------------------------
+         sub_1   sub_2   sub_3   sub_4   sub_5   sub_6   sub_7   sub_8   sub_9   sub_10   sub_11   sub_12   sub_13   sub_14     average
+         -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----     -------
+Seed 1:  100.00   92.64   96.02   97.77   95.14   94.86   97.01   96.95   97.16   93.87   85.80   98.30   93.12   99.43     95.57   
+---------------------------------
+Average acc - all seeds: 95.57 %
+
+Train Time  - all seeds: 822.8 min
+---------------------------------
+
+
+---------------------------------
+Test performance (acc & k-score):
+---------------------------------
+                  sub_1   sub_2   sub_3   sub_4   sub_5   sub_6   sub_7   sub_8   sub_9   sub_10   sub_11   sub_12   sub_13   sub_14     average
+                  -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----     -------
+Seed 1: (acc %)   95.00   91.25   97.50   95.62   95.62   93.75   91.82   94.38   94.38   85.00   84.38   95.00   91.82   82.50     92.00   
+        (k-sco)   0.933   0.883   0.967   0.942   0.942   0.917   0.891   0.925   0.925   0.800   0.792   0.933   0.891   0.767     0.893   
+----------------------------------
+Average - all seeds (acc %): 92.00
+                    (k-sco): 0.893
+
+Inference time: 1.84 ms per trial
+----------------------------------
+
