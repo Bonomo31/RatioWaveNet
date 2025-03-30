@@ -18,6 +18,7 @@ Author:  Hamdi Altaheri
 
 #%%
 # We need the following to load and preprocess the High Gamma Dataset
+import mne
 import numpy as np
 import logging
 from collections import OrderedDict
@@ -31,8 +32,9 @@ from libreria_braindecode.signalproc import resample_cnt
 #from braindecode.datautil.trial_segment import \
 #    create_signal_target_from_raw_mne
 #from braindecode.mne_ext.signalproc import mne_apply, resample_cnt
-#from braindecode.datautil.signalproc import exponential_running_standardize
-#from braindecode.datautil.signalproc import highpass_cnt
+from braindecode.mne_ext.signalproc import mne_apply
+from braindecode.datautil.signalproc import exponential_running_standardize
+from braindecode.datautil.signalproc import highpass_cnt
 
 #%%
 def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
@@ -131,22 +133,62 @@ def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
     
     #print("Dopo aggiunta canale di stimolazione: ",cnt.ch_names)
 
-    # Further preprocessings as descibed in paper
+    # Further preprocessings as described in paper
     log.info("Resampling...")
+    # Prima del resampling, verifica la frequenza di campionamento
+    #print(f"Frequenza di campionamento prima del resampling: {cnt.info['sfreq']}")
     cnt = resample_cnt(cnt, 250.0)
-    """log.info("Highpassing...")
+    # Dopo il resampling, verifica la frequenza di campionamento
+    #print(f"Frequenza di campionamento dopo del resampling: {cnt.info['sfreq']}")
+
+    log.info("Highpassing...")
+    # Prima dell'Highpass filter, visualizza un segmento del segnale
+    #raw_data_before = cnt.get_data()
+    #print(f"Forma dei dati prima del highpass: {raw_data_before.shape}")
+
     cnt = mne_apply(
         lambda a: highpass_cnt(
             a, low_cut_hz, cnt.info['sfreq'], filt_order=3, axis=1),
         cnt)
-    print("Dopo highpass: ", cnt.get_data().shape)
+
+    # Dopo l'Highpass filter, verifica la forma dei dati
+    #raw_data_after = cnt.get_data()
+    #print(f"Forma dei dati dopo del highpass: {raw_data_after.shape}")
+
+    # Ottieni gli indici dei canali selezionati
+    picks = [cnt.info['ch_names'].index(channel) for channel in C_sensors if channel in cnt.info['ch_names']]
+
+    # Seleziona solo i canali desiderati dal Raw object
+    cnt_selected = cnt.copy().pick(picks)
+
+    # Log per indicare che la standardizzazione sta iniziando
     log.info("Standardizing...")
-    cnt = mne_apply(
-        lambda a: exponential_running_standardize(a.T, factor_new=1e-3,
-                                                  init_block_size=1000,
-                                                  eps=1e-4).T,
-        cnt)
-    print("Dopo standardizzazione: ", cnt.get_data().shape)"""
+
+    # Esegui la standardizzazione solo sui canali selezionati
+    cnt_selected_data = cnt_selected.get_data()
+
+    # Verifica la forma dei dati prima della standardizzazione
+    #print(f"Forma dei dati prima della standardizzazione: {cnt_selected_data.shape}")
+
+    # Applica la standardizzazione ai canali selezionati
+    cnt_selected_data = exponential_running_standardize(cnt_selected_data.T, 
+                                                    factor_new=1e-3, 
+                                                    init_block_size=1000, 
+                                                    eps=1e-4).T
+
+    # Aggiorna i dati nel Raw object `cnt` solo per i canali selezionati
+    cnt._data[picks, :] = cnt_selected_data
+
+    # Verifica la forma dei dati dopo la standardizzazione
+    #print(f"Forma dei dati dopo la standardizzazione: {cnt.get_data().shape}")
+
+    # Verifica la media e la deviazione standard dei dati dopo la standardizzazione
+    #print(f"Media dei dati dopo la standardizzazione: {cnt_selected_data.mean(axis=1)}")
+    #print(f"Deviazione standard dei dati dopo la standardizzazione: {cnt_selected_data.std(axis=1)}")
+
+    # Ora `cnt` contiene i dati aggiornati, inclusi quelli standardizzati, 
+    # e puoi continuare con la creazione del dataset
+
 
     # Trial interval, start at -500 already, since improved decoding for networks
     ival = [-500, 4000]
@@ -161,10 +203,11 @@ def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
     #print("ival: ",ival)
 
     dataset = create_signal_target_from_raw_mne(cnt, marker_def, ival)
+    #print("Dopo creazione del dataset: ", dataset.X.shape)
     dataset.X = dataset.X[clean_trial_mask]
     dataset.y = dataset.y[clean_trial_mask]
     #Ultimo canale è il canale di stimolazione e non è necessario quindi lo rimuoviamo
     dataset.X = dataset.X[:, :-1]
-    print("Dopo pulizia: ", dataset.X.shape)
-    print("Dopo pulizia: ", dataset.y.shape)
+    #print("Dopo pulizia: ", dataset.X.shape)
+    #print("Dopo pulizia: ", dataset.y.shape)
     return dataset.X, dataset.y
