@@ -34,6 +34,8 @@ Inference time: 1.95 ms per trial
 RockNetA con RDWT:
 miglioramento nel preprocess_HGD, aggiunta di highpassing e Standardizing
 500 epoche -> 834m 3.8s
+avg train -> 95.57%
+
 ---------------------------------
 Test performance (acc & k-score):
 ---------------------------------
@@ -50,4 +52,19 @@ Inference time: 1.84 ms per trial
 
 RockNetA con RDWT:
 miglioramento nel preprocess_HGD, aggiunta di highpassing e Standardizing
-1000 epoche -> 
+1000 epoche -> 1634.7m
+avg train -> 95.57%
+
+---------------------------------
+Test performance (acc & k-score):
+---------------------------------
+                  sub_1   sub_2   sub_3   sub_4   sub_5   sub_6   sub_7   sub_8   sub_9   sub_10   sub_11   sub_12   sub_13   sub_14     average
+                  -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----   -----     -------
+Seed 1: (acc %)   90.62   93.75   98.12   96.88   94.38   93.75   91.19   91.88   95.62   89.38   77.50   95.00   89.94   76.25     91.02   
+        (k-sco)   0.875   0.917   0.975   0.958   0.925   0.917   0.883   0.892   0.942   0.858   0.700   0.933   0.866   0.683     0.880   
+----------------------------------
+Average - all seeds (acc %): 91.02
+                    (k-sco): 0.880
+
+Inference time: 1.77 ms per trial
+----------------------------------
