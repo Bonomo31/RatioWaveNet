@@ -6,7 +6,7 @@ import os
 
 from sklearn.discriminant_analysis import StandardScaler
 from sklearn.utils import shuffle
-from tensorflow.keras.utils import to_categorical # type: ignore
+from tensorflow.keras.utils import to_categorical
 #from preprocess_HGD import load_HGD_data
 
 def load_data_LOSO(data_path,subject,dataset):
@@ -145,6 +145,120 @@ def load_BCI2b_data(data_path, subject, training, all_trials=True):
 
     return data_return, class_return
 
+"""Nuova Funzione BCI2b load_data per evitare un k-score basso
+def load_BCI2b_data(data_path, subject, training, all_trials=True):
+    
+    #Versione migliorata con:
+    #- Migliore gestione degli artefatti
+    #- Filtraggio più appropriato
+    #- Verifica del bilanciamento delle classi
+    #- Gestione più robusta degli eventi
+    
+    file_suffix = 'T' if training else 'E'
+    subject_files = sorted(glob.glob(os.path.join(data_path, f"B{subject:02d}??{file_suffix}.gdf")))
+    
+    if not subject_files:
+        raise FileNotFoundError(f"Nessun file trovato per il soggetto {subject} e sessione {file_suffix} in {data_path}")
+
+    all_data = []
+    all_labels = []
+
+    fs = 250  # Hz
+    t1, t2 = int(0.5 * fs), int(3.5 * fs)  # 0.5-3.5 secondi dopo l'evento
+    window_length = t2 - t1
+
+    # Canali EEG - aggiungo anche Pz per migliorare la copertura
+    channels = ['C3', 'Cz', 'C4', 'Pz']
+
+    for gdf_file in subject_files:
+        try:
+            # Caricamento con correzione automatica dei nomi dei canali
+            raw = mne.io.read_raw_gdf(gdf_file, preload=True)
+            
+            # Filtraggio migliorato per MI (8-30 Hz)
+            raw.filter(8, 30, method='iir', iir_params=dict(order=5, ftype='butter'))
+            
+            # Notch filter per rimuovere rumore di linea (50Hz in Europa)
+            raw.notch_filter(50)
+            
+            # Normalizza i nomi dei canali
+            normalized_ch_names = [ch.split(':')[-1] if ':' in ch else ch for ch in raw.ch_names]
+            raw.rename_channels(dict(zip(raw.ch_names, normalized_ch_names)))
+            
+            # Seleziona solo i canali EEG disponibili
+            available_channels = [ch for ch in channels if ch in raw.ch_names]
+            if len(available_channels) < 2:  # Almeno 2 canali
+                print(f"Canali insufficienti nel file {gdf_file}. Disponibili: {raw.ch_names}")
+                continue
+                
+            raw.pick_channels(available_channels)
+            
+            # Estrai eventi con gestione più robusta
+            events, event_id = mne.events_from_annotations(raw)
+            
+            # Mappa eventi alle classi con controllo aggiuntivo
+            class_mapping = {'769': 0, '770': 1, '771': 2, '772': 3}  # Standard per BCI2b
+            trial_events = []
+            trial_labels = []
+            
+            for e in events:
+                if str(e[2]) in class_mapping:
+                    trial_events.append(e)
+                    trial_labels.append(class_mapping[str(e[2])])
+            
+            if not trial_events:
+                print(f"Nessun evento valido trovato in {gdf_file}")
+                continue
+                
+            # Estrazione dei trial con controllo degli artefatti
+            for i, (start, _, event_code) in enumerate(trial_events):
+                event_str = str(event_code)
+                
+                # Salta trial con artefatti se richiesto
+                if not all_trials and ('artefact' in event_id or 'artif' in event_id):
+                    print("Trial con artefatti esclusi")
+                    continue
+                    
+                try:
+                    # Estrai dati con controllo dei limiti
+                    if start + t1 >= 0 and start + t2 <= raw.n_times:
+                        trial_data = raw.get_data(start=start + t1, stop=start + t2)
+                        
+                        # Controllo qualità: scarta trial con valori NaN o estremi
+                        if np.isnan(trial_data).any() or np.max(np.abs(trial_data)) > 1e6:
+                            print(f"Trial {i} scartato per dati non validi")
+                            continue
+                            
+                        all_data.append(trial_data)
+                        all_labels.append(class_mapping[event_str])
+                except Exception as e:
+                    print(f"Errore durante l'estrazione del trial {i}: {e}")
+                    continue
+                    
+        except Exception as e:
+            print(f"Errore durante l'elaborazione del file {gdf_file}: {e}")
+            continue
+            
+    # Conversione e controllo finale
+    if all_data:
+        data_return = np.array(all_data)
+        class_return = np.array(all_labels)
+        
+        # Verifica bilanciamento classi
+        unique, counts = np.unique(class_return, return_counts=True)
+        print(f"Distribuzione classi: {dict(zip(unique, counts))}")
+        
+        # Rimozione eventuali NaN residui
+        mask = ~np.isnan(data_return).any(axis=(1,2))
+        data_return = data_return[mask]
+        class_return = class_return[mask]
+    else:
+        data_return = np.empty((0, len(channels), window_length))
+        class_return = np.empty((0,))
+        
+    return data_return, class_return
+"""
+
 def load_BCI2a_data(data_path, subject, training, all_trials=True):
     # Define MI-trials parameters
     n_channels = 22
@@ -198,6 +312,46 @@ def standardize_data(X_train, X_test, channels):
 
     return X_train, X_test
 
+"""
+def standardize_data(X_train, X_test, channels):
+    
+    #Versione migliorata con:
+    #- Standardizzazione più robusta mantenendo la struttura spaziotemporale
+    #- Gestione di eventuali NaN
+    #- Opzione per standardizzazione globale
+    
+    # Conserva la forma originale
+    original_shape_train = X_train.shape
+    original_shape_test = X_test.shape
+    
+    # Reshape per standardizzazione (considera tutti i punti temporali insieme)
+    X_train_reshaped = X_train.reshape(-1, channels, X_train.shape[-1])
+    X_test_reshaped = X_test.reshape(-1, channels, X_test.shape[-1])
+    
+    # Standardizzazione per ogni canale
+    for j in range(channels):
+        scaler = StandardScaler()
+        
+        # Estrai tutti i trial per il canale j
+        train_channel = X_train_reshaped[:, j, :]
+        test_channel = X_test_reshaped[:, j, :]
+        
+        # Rimuovi eventuali NaN
+        if np.isnan(train_channel).any():
+            train_channel = np.nan_to_num(train_channel, nan=np.nanmean(train_channel))
+        
+        # Fit e transform
+        scaler.fit(train_channel)
+        X_train_reshaped[:, j, :] = scaler.transform(train_channel)
+        X_test_reshaped[:, j, :] = scaler.transform(test_channel)
+    
+    # Ripristina la forma originale
+    X_train = X_train_reshaped.reshape(original_shape_train)
+    X_test = X_test_reshaped.reshape(original_shape_test)
+    
+    return X_train, X_test
+"""
+
 def get_data(path,subject,dataset='BCI2b',class_labels='all',LOSO=False,isStandard=True,isShuffle=True):
     # Load and split the dataset into training and testing 
     if LOSO:
@@ -245,3 +399,79 @@ def get_data(path,subject,dataset='BCI2b',class_labels='all',LOSO=False,isStanda
         X_train, X_test = standardize_data(X_train, X_test, N_ch)
 
     return X_train, y_train, y_train_onehot, X_test, y_test, y_test_onehot
+
+"""
+def get_data(path, subject, dataset='BCI2b', class_labels='all', LOSO=False, 
+             isStandard=True, isShuffle=True, balance_classes=True):
+    
+    #Versione migliorata con:
+    #- Opzione per bilanciamento delle classi
+    #- Migliore gestione degli shape
+    #- Controllo della distribuzione delle classi
+    #- Aggiunta di logging informativo
+    
+    # Caricamento dati originale
+    if LOSO:
+        X_train, y_train, X_test, y_test = load_data_LOSO(path, subject, dataset)
+    else:
+        if dataset == 'BCI2a':
+            path = path + 's{:}/'.format(subject+1)
+            X_train, y_train = load_BCI2a_data(path, subject+1, True)
+            X_test, y_test = load_BCI2a_data(path, subject+1, False)
+        elif dataset == 'BCI2b':
+            path = path + '/'
+            X_train, y_train = load_BCI2b_data(path, subject+1, True)
+            X_test, y_test = load_BCI2b_data(path, subject+1, False)
+        else:
+            raise ValueError(f"Dataset '{dataset}' non supportato")
+
+    # Analisi distribuzione classi
+    print("\nDistribuzione classi prima del bilanciamento:")
+    print(f"Training - Classe 0: {sum(y_train == 0)}, Classe 1: {sum(y_train == 1)}")
+    print(f"Test - Classe 0: {sum(y_test == 0)}, Classe 1: {sum(y_test == 1)}")
+
+    # Bilanciamento delle classi (solo training set)
+    if balance_classes:
+        from imblearn.over_sampling import SMOTE
+        
+        # Reshape per SMOTE (flatten temporale)
+        N_tr, N_ch, T = X_train.shape
+        X_train_flat = X_train.reshape(N_tr, -1)  # (trials, channels*time_points)
+        
+        # Applica SMOTE
+        smote = SMOTE(random_state=42)
+        X_train_balanced, y_train_balanced = smote.fit_resample(X_train_flat, y_train)
+        
+        # Ripristina la forma originale
+        X_train = X_train_balanced.reshape(-1, N_ch, T)
+        y_train = y_train_balanced
+        
+        print("\nDopo bilanciamento:")
+        print(f"Training - Classe 0: {sum(y_train == 0)}, Classe 1: {sum(y_train == 1)}")
+
+    # Shuffle
+    if isShuffle:
+        X_train, y_train = shuffle(X_train, y_train, random_state=42)
+        X_test, y_test = shuffle(X_test, y_test, random_state=42)
+
+    # Reshape per modello CNN (aggiungi dimensione MI-tasks)
+    X_train = X_train.reshape(-1, 1, X_train.shape[1], X_train.shape[2])
+    X_test = X_test.reshape(-1, 1, X_test.shape[1], X_test.shape[2])
+
+    # One-hot encoding
+    num_classes = len(np.unique(np.concatenate([y_train, y_test])))
+    y_train_onehot = to_categorical(y_train, num_classes=num_classes)
+    y_test_onehot = to_categorical(y_test, num_classes=num_classes)
+
+    # Standardizzazione
+    if isStandard:
+        X_train, X_test = standardize_data(X_train, X_test, X_train.shape[2])  # Numero canali
+
+    # Verifica finale
+    print("\nShape finali:")
+    print(f"X_train: {X_train.shape}, y_train: {y_train_onehot.shape}")
+    print(f"X_test: {X_test.shape}, y_test: {y_test_onehot.shape}")
+    
+    return X_train, y_train, y_train_onehot, X_test, y_test, y_test_onehot
+    
+"""
