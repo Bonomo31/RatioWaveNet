@@ -45,7 +45,7 @@ def attention_block(in_layer, attention_model, ratio=8, residual = False, apply_
         out_layer = se_block(in_layer, ratio, residual, apply_to_input)
     elif attention_model == 'cbam': # Convolutional block attention module
         if(in_len < 4):
-            in_layer = tf.expand_dims(in_layer, axis=expanded_axis)
+            in_layer = Lambda(lambda x: tf.expand_dims(x, axis=expanded_axis))(in_layer)
         out_layer = cbam_block(in_layer, ratio=ratio, residual = residual)
     else:
         raise Exception("'{}' is not supported attention module!".format(attention_model))

@@ -82,24 +82,17 @@ def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
     # Salviamo il canale di stimolazione prima di eliminarlo
     stim_channel = cnt.copy().pick_channels(['STI 014'])
 
-    # Cleaning: First find all trials that have absolute microvolt values
-    # larger than +- 800 inside them and remember them for removal later
+
     log.info("Cutting trials...")
 
     marker_def = OrderedDict([('Right Hand', [2]), ('Left Hand', [4],),
                               ('Rest', [6]), ('Feet', [8])])
-    clean_ival = [0, 4000]
+    clean_ival = [0, 3000]
 
     set_for_cleaning = create_signal_target_from_raw_mne(cnt, marker_def,
                                                   clean_ival)
 
-    #print("Set For Cleaning:",type(set_for_cleaning))
-    #print("Attributi: ",dir(set_for_cleaning))
-    #print(set_for_cleaning.X.shape)
-    #if hasattr(set_for_cleaning, 'X'):
-    #  print(set_for_cleaning.X.shape)
-    #else:
-    #  print("L'attributo 'X' non esiste in 'set_for_cleaning'.")
+
 
     clean_trial_mask = np.max(np.abs(set_for_cleaning.X), axis=(1, 2)) < 800
 
@@ -108,7 +101,6 @@ def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
         len(set_for_cleaning.X),
         np.mean(clean_trial_mask) * 100))
     
-    #print("Numero di trials validi:", np.sum(clean_trial_mask))
 
 
     # now pick only sensors with C in their name
@@ -130,32 +122,20 @@ def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
     
     # Riaggiungiamo il canale di stimolazione
     cnt = cnt.add_channels([stim_channel])
-    
-    #print("Dopo aggiunta canale di stimolazione: ",cnt.ch_names)
 
-    # Further preprocessings as described in paper
     log.info("Resampling...")
-    # Prima del resampling, verifica la frequenza di campionamento
-    #print(f"Frequenza di campionamento prima del resampling: {cnt.info['sfreq']}")
+
     cnt = resample_cnt(cnt, 250.0)
-    # Dopo il resampling, verifica la frequenza di campionamento
-    #print(f"Frequenza di campionamento dopo del resampling: {cnt.info['sfreq']}")
 
     log.info("Highpassing...")
-    # Prima dell'Highpass filter, visualizza un segmento del segnale
-    #raw_data_before = cnt.get_data()
-    #print(f"Forma dei dati prima del highpass: {raw_data_before.shape}")
+
 
     cnt = mne_apply(
         lambda a: highpass_cnt(
             a, low_cut_hz, cnt.info['sfreq'], filt_order=3, axis=1),
         cnt)
 
-    # Dopo l'Highpass filter, verifica la forma dei dati
-    #raw_data_after = cnt.get_data()
-    #print(f"Forma dei dati dopo del highpass: {raw_data_after.shape}")
 
-    # Ottieni gli indici dei canali selezionati
     picks = [cnt.info['ch_names'].index(channel) for channel in C_sensors if channel in cnt.info['ch_names']]
 
     # Seleziona solo i canali desiderati dal Raw object
@@ -167,10 +147,6 @@ def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
     # Esegui la standardizzazione solo sui canali selezionati
     cnt_selected_data = cnt_selected.get_data()
 
-    # Verifica la forma dei dati prima della standardizzazione
-    #print(f"Forma dei dati prima della standardizzazione: {cnt_selected_data.shape}")
-
-    # Applica la standardizzazione ai canali selezionati
     cnt_selected_data = exponential_running_standardize(cnt_selected_data.T, 
                                                     factor_new=1e-3, 
                                                     init_block_size=1000, 
@@ -179,35 +155,31 @@ def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
     # Aggiorna i dati nel Raw object `cnt` solo per i canali selezionati
     cnt._data[picks, :] = cnt_selected_data
 
-    # Verifica la forma dei dati dopo la standardizzazione
-    #print(f"Forma dei dati dopo la standardizzazione: {cnt.get_data().shape}")
-
-    # Verifica la media e la deviazione standard dei dati dopo la standardizzazione
-    #print(f"Media dei dati dopo la standardizzazione: {cnt_selected_data.mean(axis=1)}")
-    #print(f"Deviazione standard dei dati dopo la standardizzazione: {cnt_selected_data.std(axis=1)}")
-
-    # Ora `cnt` contiene i dati aggiornati, inclusi quelli standardizzati, 
-    # e puoi continuare con la creazione del dataset
-
-
-    # Trial interval, start at -500 already, since improved decoding for networks
     ival = [-500, 4000]
     
-    #Stampiamo i dati che passiamo alla funzione create_signal_target_from_raw_mne
-    #print("Dati passati a create_signal_target_from_raw_mne:")
-    #print("cnt: ",type(cnt_1))
-    #print("marker_def: ",type(marker_def))
-    #print("ival: ",type(ival))
-    #print("cnt: ",cnt_1)
-    #print("marker_def: ",marker_def)
-    #print("ival: ",ival)
 
     dataset = create_signal_target_from_raw_mne(cnt, marker_def, ival)
-    #print("Dopo creazione del dataset: ", dataset.X.shape)
+
     dataset.X = dataset.X[clean_trial_mask]
     dataset.y = dataset.y[clean_trial_mask]
-    #Ultimo canale è il canale di stimolazione e non è necessario quindi lo rimuoviamo
     dataset.X = dataset.X[:, :-1]
-    #print("Dopo pulizia: ", dataset.X.shape)
-    #print("Dopo pulizia: ", dataset.y.shape)
+    
+    
+    # Normalizzazione channel-wise
+    if subject != 14:
+        print("[INFO] Normalizing channel-wise for subject {}...".format(subject))
+        dataset.X = (dataset.X - dataset.X.mean(axis=2, keepdims=True)) / (dataset.X.std(axis=2, keepdims=True) + 1e-5)
+    else:
+        print("[INFO] Skipping normalization for subject 14.")
+        
+    # Rumore gaussiano + sinusoidi + scaling
+    if training and subject != 14:
+        print("[INFO] Adding standard augmentation for subject {}...".format(subject))
+        dataset.X += np.random.normal(0, 0.01, dataset.X.shape)
+        dataset.X += 0.005 * np.sin(2 * np.pi * np.random.rand(*dataset.X.shape))
+        scaling = np.random.uniform(0.9, 1.1, (dataset.X.shape[0], 1, 1))
+        dataset.X *= scaling
+    elif subject == 14:
+        print("[INFO] Skipping augmentation for subject 14.")
+    
     return dataset.X, dataset.y
