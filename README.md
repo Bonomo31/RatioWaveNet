@@ -28,7 +28,7 @@ The following table summarizes the classification performance of [**RockNetA**](
 | EEGNet          | 2,548   | 77.68             | 70.24          | 86.08             | 72.13          | 88.25        | 84.33     |
 
 > **Note**: *HGD = High Gamma Dataset*
-> please note that HGD is for "executed movements" NOT "motor imagery"
+> ^* please note that HGD is for "executed movements" NOT "motor imagery"
 
 ----
 # Comparative preprocessing  
