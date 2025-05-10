@@ -47,8 +47,8 @@ In particular, the results highlight the performance improvements achieved by [*
 |                | RDWT          | 79.51       | 72.70    | 96.74       | 61.90    |
 | EEGTCNet       | None          | 64.35       | 52.50    | 95.81       | 58.90    |
 |                | RDWT          | 68.79       | 58.40    | 96.09       | 66.60    |
-| MBEEG_SENet    | None          | 70.49       | 60.60    |
-|                | RDWT          | 72.72       | 63.60    |
+| MBEEG_SENet    | None          | 70.49       | 60.60    | 96.95       | 73.80    | 
+|                | RDWT          | 72.72       | 63.60    | 96.28       | 63.50    |          
 | ShallowConvNet | None          | 65.74       | 54.30    | 96.13       | 60.70    |
 |                | RDWT          | 66.32       | 55.10    | 95.94       | 62.30    |
 | EEGNet         | None          | 70.79       | 61.10    | 95.85       | 59.60    |
