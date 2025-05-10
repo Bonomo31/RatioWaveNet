@@ -1,4 +1,21 @@
-## Risultati sui dataset EEG
+# RockNetA: A Multi-Window Temporal-Attention Architecture with EEG-Specific Convolutions and TCNs for Robust Brain Signal Learning
+
+RockNetA is a custom deep learning architecture designed for the classification of EEG signals in Motor Imagery (MI) tasks. Inspired by existing models like EEGNet and ATCNet, RockNetA introduces a lightweight CNN framework enhanced with residual connections, dropout, and optimized temporal feature extraction.
+
+Authors : 
+
+University of Palermo, Italia 
+
+---
+In addition to the proposed [**RockNetA**](https://github.com/..) model, the repository includes implementations of several other well-known EEG classification architectures in the `models.py` file, which can be used as baselines for comparison with RockNetA. These include:
+
+- [**EEGNet**](https://arxiv.org/abs/1611.08024), [original code](https://github.com/vlawhern/arl-eegmodels)
+- [**EEG-TCNet**](https://ieeexplore.ieee.org/document/9222561), [original code](https://github.com/EndlessSora/EEG-TCNet)
+- [**MBEEG_SENet**](https://ieeexplore.ieee.org/document/9444761)
+- [**ShallowConvNet**](https://arxiv.org/abs/1703.05051), [original code](https://github.com/robintibor/braindecode)
+
+The following table summarizes the classification performance of [**RockNetA**](https://github.com/your-username/RockNetA) and the other reproduced models, based on the experimental setup defined in the notebook for each model and dataset.
+
 
 | Model           | #params | BCI 4-2a Accuracy | BCI 4-2a Kappa | BCI 4-2b Accuracy | BCI 4-2b Kappa | HGD Accuracy | HGD Kappa |
 |-----------------|---------|-------------------|----------------|-------------------|----------------|--------------|-----------|
@@ -10,6 +27,14 @@
 | EEGNet          | 2,548   | 77.68             | 70.24          | 86.08             | 72.13          | 88.25        | 84.33     |
 
 > **Note**: *HGD = High Gamma Dataset*
+
+----
+The following table presents a comparative analysis of different deep learning models with and without the application of the RDWT (Redundant Discrete Wavelet Transform) preprocessing technique. The evaluation covers three benchmark EEG motor imagery datasets: BCI Competition IV-2a, BCI Competition IV-2b, and the High-Gamma Dataset (HGD). The aim is to assess the impact of RDWT on classification performance (accuracy and Cohen’s kappa score).
+
+In particular, the results highlight the performance improvements achieved by [**RockNetA**](https://github.com/your-username/RockNetA) when combined with the RDWT preprocessing, compared to both its baseline (no preprocessing) and other well-established architectures.
+
+> **Note**: *Unlike the previous table, the results reported here for the HGD and BCI IV-2b datasets include an enhanced preprocessing pipeline, which incorporates data augmentation and class balancing techniques. These strategies were employed to address class imbalance and improve the generalization capabilities of the models.*
+
 
 | Model           | Preprocessing | BCI 2a Acc. | BCI 2a κ | BCI 2b Acc. | BCI 2b κ | HGD Acc. | HGD κ |
 |----------------|---------------|-------------|----------|-------------|----------|----------|--------|
@@ -26,4 +51,32 @@
 | EEGNet         | None          | 70.79       | 61.10    | 
 |                | RDWT          | 70.10       | 60.10    |
 
-> **Note**: *Unlike the previous table, the results reported here for the HGD and BCI IV-2b datasets include an enhanced preprocessing pipeline, which incorporates data augmentation and class balancing techniques. These strategies were employed to address class imbalance and improve the generalization capabilities of the models.*
+----
+# Dataset
+
+This project uses three publicly available EEG motor imagery datasets for training and evaluation:
+
+### 1. BCI Competition IV – Dataset 2a
+
+- **Description**: EEG data from 9 subjects performing four different motor imagery tasks: left hand, right hand, feet, and tongue movements. Each subject completed two sessions (training and evaluation), with 288 trials per session.
+- **Format**: `.mat` files
+- **Download**: [BCI Competition IV – Dataset 2a](https://www.bbci.de/competition/iv/download/)
+- **Alternative Access**: Available on [Kaggle](https://www.kaggle.com/datasets/thngdngvn/bci-competition-iv-data-sets-2a)
+
+### 2. BCI Competition IV – Dataset 2b
+
+- **Description**: EEG recordings from 9 subjects performing left and right hand motor imagery tasks. The dataset contains five sessions per subject, with three sessions including feedback.
+- **Format**: `.gdf` files
+- **Download**: [BCI Competition IV – Dataset 2b](https://www.bbci.de/competition/iv/download/)
+- **Alternative Access**: Available on [GitHub](https://github.com/Ahmed-Habashy/Dataset-BCI-competition-iv-2b)
+
+### 3. High-Gamma Dataset (HGD)
+
+- **Description**: EEG recordings from 14 subjects performing motor execution tasks, recorded using 128 channels. This dataset is well-suited for high-frequency EEG analysis.
+- **Format**: `.edf` files
+- **Download**: Available through the [GIN Repository](https://web.gin.g-node.org/robintibor/high-gamma-dataset)
+- **Usage**: Easily accessible via the [Braindecode](https://braindecode.org/) Python library.
+
+> **Note**: Each dataset has a dedicated notebook in this repository, which includes download links and preprocessing instructions.
+
+
