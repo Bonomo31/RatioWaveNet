@@ -1,25 +1,69 @@
-import mne
+""" 
+Copyright (C) 2022 King Saud University, Saudi Arabia 
+SPDX-License-Identifier: Apache-2.0 
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the 
+License at
+
+http://www.apache.org/licenses/LICENSE-2.0  
+
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR 
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License. 
+
+Author:  Hamdi Altaheri 
+"""
+
+# Dataset BCI Competition IV-2a is available at 
+# http://bnci-horizon-2020.eu/database/data-sets
+
 import numpy as np
 import scipy.io as sio
-import glob
-import os
-
-from sklearn.discriminant_analysis import StandardScaler
-from sklearn.utils import shuffle
 from tensorflow.keras.utils import to_categorical
-#from preprocess_HGD import load_HGD_data
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import shuffle
 
-def load_data_LOSO(data_path,subject,dataset):
+# We need the following function to load and preprocess the High Gamma Dataset
+# from preprocess_HGD import load_HGD_data
+
+#%%
+def load_data_LOSO (data_path, subject, dataset): 
+    """ Loading and Dividing of the data set based on the 
+    'Leave One Subject Out' (LOSO) evaluation approach. 
+    LOSO is used for  Subject-independent evaluation.
+    In LOSO, the model is trained and evaluated by several folds, equal to the 
+    number of subjects, and for each fold, one subject is used for evaluation
+    and the others for training. The LOSO evaluation technique ensures that 
+    separate subjects (not visible in the training data) are usedto evaluate 
+    the model.
+    
+        Parameters
+        ----------
+        data_path: string
+            dataset path
+            # Dataset BCI Competition IV-2a is available at 
+            # http://bnci-horizon-2020.eu/database/data-sets
+        subject: int
+            number of subject in [1, .. ,9/14]
+            Here, the subject data is used  test the model and other subjects data
+            for training
+    """
+    
     X_train, y_train = [], []
     for sub in range (0,9):
-        #path = data_path+'s' + str(sub+1) + '/'
-        path = data_path+'/'
+        path = data_path+'s' + str(sub+1) + '/'
+        
         if (dataset == 'BCI2a'):
             X1, y1 = load_BCI2a_data(path, sub+1, True)
             X2, y2 = load_BCI2a_data(path, sub+1, False)
-        elif (dataset == 'BCI2b'):
-            X1, y1 = load_BCI2b_data(path, sub+1, True)
-            X2, y2 = load_BCI2b_data(path, sub+1, False)
+        elif (dataset == 'CS2R'):
+            X1, y1, _, _, _  = load_CS2R_data_v2(path, sub, True)
+            X2, y2, _, _, _  = load_CS2R_data_v2(path, sub, False)
+        # elif (dataset == 'HGD'):
+        #     X1, y1 = load_HGD_data(path, sub+1, True)
+        #     X2, y2 = load_HGD_data(path, sub+1, False)
         
         X = np.concatenate((X1, X2), axis=0)
         y = np.concatenate((y1, y2), axis=0)
@@ -37,229 +81,30 @@ def load_data_LOSO(data_path,subject,dataset):
     return X_train, y_train, X_test, y_test
 
 
-def load_BCI2b_data(data_path, subject, training, all_trials=True):
+#%%
+def load_BCI2a_data(data_path, subject, training, all_trials = True):
+    """ Loading and Dividing of the data set based on the subject-specific 
+    (subject-dependent) approach.
+    In this approach, we used the same training and testing dataas the original
+    competition, i.e., 288 x 9 trials in session 1 for training, 
+    and 288 x 9 trials in session 2 for testing.  
+   
+        Parameters
+        ----------
+        data_path: string
+            dataset path
+            # Dataset BCI Competition IV-2a is available on 
+            # http://bnci-horizon-2020.eu/database/data-sets
+        subject: int
+            number of subject in [1, .. ,9]
+        training: bool
+            if True, load training data
+            if False, load testing data
+        all_trials: bool
+            if True, load all trials
+            if False, ignore trials with artifacts 
     """
-    Carica e combina i dati EEG del dataset BCI Competition IV-2b da più sessioni.
-
-    Parametri
-    ----------
-    data_path : str
-        Percorso alla cartella contenente i file .gdf.
-    subject : int
-        Numero del soggetto [1, ..., 9].
-    training : bool
-        Se True, carica le sessioni di training (T).
-        Se False, carica le sessioni di test (E).
-    all_trials : bool
-        Se True, carica tutti i trials.
-        Se False, esclude i trials con artefatti.
-
-    Ritorna
-    -------
-    data_return : np.ndarray
-        Array con i dati EEG (n_trials, n_channels, window_length).
-    class_return : np.ndarray
-        Array con le etichette dei trials.
-    """
-
-    # Identifica i file in base al soggetto e al tipo (T = Training, E = Test)
-    file_suffix = 'T' if training else 'E'
-    subject_files = sorted(glob.glob(os.path.join(data_path, f"B{subject:02d}??{file_suffix}.gdf")))
-
-    if not subject_files:
-        raise FileNotFoundError(f"Nessun file trovato per il soggetto {subject} e sessione {file_suffix} in {data_path}")
-
-    all_data = []
-    all_labels = []
-
-    # Frequenza di campionamento e finestra temporale
-    fs = 250  # Hz
-    t1, t2 = int(0.5 * fs), int(3.5 * fs)  # Intervallo temporale
-    window_length = t2 - t1
-
-    # Canali EEG da selezionare
-    channels = ['C3', 'Cz', 'C4']
-
-    for gdf_file in subject_files:
-        #print(f"Caricando file GDF: {gdf_file}")
-
-        # Caricamento dati EEG
-        raw = mne.io.read_raw_gdf(gdf_file, preload=True)
-        raw.filter(l_freq=0.5, h_freq=100)  # Filtraggio passa banda
-        #print(f"Canali disponibili nel file: {raw.ch_names}")
-
-        # Normalizza i nomi dei canali rimuovendo il prefisso 'EEG:'
-        normalized_ch_names = [ch.split(':')[-1] for ch in raw.ch_names]
-
-        # Verifica se i canali richiesti sono effettivamente presenti
-        available_channels = [ch for ch in channels if ch in normalized_ch_names]
-        if not available_channels:
-            print(f"Nessuno dei canali richiesti ({channels}) è disponibile nel file {gdf_file}. Salto il file.")
-            continue
-
-        # Seleziona i canali disponibili
-        raw.pick_channels([f"EEG:{ch}" for ch in available_channels])
-        #print(f"Canali selezionati: {raw.ch_names}")
-
-        # Estrai gli eventi dal file GDF
-        events, event_id = mne.events_from_annotations(raw)
-        #print(f"Eventi trovati: {event_id}")
-
-        # Mappa gli eventi alle classi previste
-        class_mapping = {1: 0, 2: 1}  # Mappa evento 1 -> classe 0, evento 2 -> classe 1
-        trial_events = [e for e in events if e[2] in class_mapping]
-        trial_labels = [class_mapping[e[2]] for e in trial_events]  # Etichette dei trial
-        trial_markers = [e[0] for e in trial_events]  # Inizio dei trial
-
-        #print(f"Numero totale di trial: {len(trial_labels)}")
-
-        for i, start in enumerate(trial_markers):
-            if not all_trials and 'artefact' in event_id and trial_labels[i] == event_id['artefact']:
-                print(f"Trial {i} scartato per artefatti")
-                continue
-
-            try:
-                # Verifica che gli indici siano validi
-                if start + t1 < 0 or start + t2 > raw.n_times:
-                    print(f"Indici non validi per il trial {i}: start={start + t1}, stop={start + t2}")
-                    continue
-
-                trial_data = raw.get_data(start=start + t1, stop=start + t2)  # (n_channels, window_length)
-                all_data.append(trial_data)
-                all_labels.append(trial_labels[i])
-            except ValueError as e:
-                print(f"Errore durante l'estrazione dei dati per il trial {i}: {e}")
-                continue
-
-    # Conversione in array numpy
-    if all_data:
-        data_return = np.array(all_data)  # (n_trials, n_channels, window_length)
-        class_return = np.array(all_labels)  # Etichette già mappate a [0, 1]
-        assert np.all(class_return >= 0) and np.all(class_return < 2), "Le etichette non sono nel range [0, 1]"
-        #print(f"Dati EEG caricati: {data_return.shape}")
-        #print(f"Etichette caricate: {class_return.shape}")
-    else:
-        print("Nessun dato valido trovato.")
-        data_return = np.empty((0, len(channels), window_length))
-        class_return = np.empty((0,))
-
-    return data_return, class_return
-
-"""Nuova Funzione BCI2b load_data per evitare un k-score basso
-def load_BCI2b_data(data_path, subject, training, all_trials=True):
     
-    #Versione migliorata con:
-    #- Migliore gestione degli artefatti
-    #- Filtraggio più appropriato
-    #- Verifica del bilanciamento delle classi
-    #- Gestione più robusta degli eventi
-    
-    file_suffix = 'T' if training else 'E'
-    subject_files = sorted(glob.glob(os.path.join(data_path, f"B{subject:02d}??{file_suffix}.gdf")))
-    
-    if not subject_files:
-        raise FileNotFoundError(f"Nessun file trovato per il soggetto {subject} e sessione {file_suffix} in {data_path}")
-
-    all_data = []
-    all_labels = []
-
-    fs = 250  # Hz
-    t1, t2 = int(0.5 * fs), int(3.5 * fs)  # 0.5-3.5 secondi dopo l'evento
-    window_length = t2 - t1
-
-    # Canali EEG - aggiungo anche Pz per migliorare la copertura
-    channels = ['C3', 'Cz', 'C4', 'Pz']
-
-    for gdf_file in subject_files:
-        try:
-            # Caricamento con correzione automatica dei nomi dei canali
-            raw = mne.io.read_raw_gdf(gdf_file, preload=True)
-            
-            # Filtraggio migliorato per MI (8-30 Hz)
-            raw.filter(8, 30, method='iir', iir_params=dict(order=5, ftype='butter'))
-            
-            # Notch filter per rimuovere rumore di linea (50Hz in Europa)
-            raw.notch_filter(50)
-            
-            # Normalizza i nomi dei canali
-            normalized_ch_names = [ch.split(':')[-1] if ':' in ch else ch for ch in raw.ch_names]
-            raw.rename_channels(dict(zip(raw.ch_names, normalized_ch_names)))
-            
-            # Seleziona solo i canali EEG disponibili
-            available_channels = [ch for ch in channels if ch in raw.ch_names]
-            if len(available_channels) < 2:  # Almeno 2 canali
-                print(f"Canali insufficienti nel file {gdf_file}. Disponibili: {raw.ch_names}")
-                continue
-                
-            raw.pick_channels(available_channels)
-            
-            # Estrai eventi con gestione più robusta
-            events, event_id = mne.events_from_annotations(raw)
-            
-            # Mappa eventi alle classi con controllo aggiuntivo
-            class_mapping = {'769': 0, '770': 1, '771': 2, '772': 3}  # Standard per BCI2b
-            trial_events = []
-            trial_labels = []
-            
-            for e in events:
-                if str(e[2]) in class_mapping:
-                    trial_events.append(e)
-                    trial_labels.append(class_mapping[str(e[2])])
-            
-            if not trial_events:
-                print(f"Nessun evento valido trovato in {gdf_file}")
-                continue
-                
-            # Estrazione dei trial con controllo degli artefatti
-            for i, (start, _, event_code) in enumerate(trial_events):
-                event_str = str(event_code)
-                
-                # Salta trial con artefatti se richiesto
-                if not all_trials and ('artefact' in event_id or 'artif' in event_id):
-                    print("Trial con artefatti esclusi")
-                    continue
-                    
-                try:
-                    # Estrai dati con controllo dei limiti
-                    if start + t1 >= 0 and start + t2 <= raw.n_times:
-                        trial_data = raw.get_data(start=start + t1, stop=start + t2)
-                        
-                        # Controllo qualità: scarta trial con valori NaN o estremi
-                        if np.isnan(trial_data).any() or np.max(np.abs(trial_data)) > 1e6:
-                            print(f"Trial {i} scartato per dati non validi")
-                            continue
-                            
-                        all_data.append(trial_data)
-                        all_labels.append(class_mapping[event_str])
-                except Exception as e:
-                    print(f"Errore durante l'estrazione del trial {i}: {e}")
-                    continue
-                    
-        except Exception as e:
-            print(f"Errore durante l'elaborazione del file {gdf_file}: {e}")
-            continue
-            
-    # Conversione e controllo finale
-    if all_data:
-        data_return = np.array(all_data)
-        class_return = np.array(all_labels)
-        
-        # Verifica bilanciamento classi
-        unique, counts = np.unique(class_return, return_counts=True)
-        print(f"Distribuzione classi: {dict(zip(unique, counts))}")
-        
-        # Rimozione eventuali NaN residui
-        mask = ~np.isnan(data_return).any(axis=(1,2))
-        data_return = data_return[mask]
-        class_return = class_return[mask]
-    else:
-        data_return = np.empty((0, len(channels), window_length))
-        class_return = np.empty((0,))
-        
-    return data_return, class_return
-"""
-
-def load_BCI2a_data(data_path, subject, training, all_trials=True):
     # Define MI-trials parameters
     n_channels = 22
     n_tests = 6*48     
@@ -302,6 +147,161 @@ def load_BCI2a_data(data_path, subject, training, all_trials=True):
 
     return data_return, class_return
 
+#%%
+import os
+import glob
+import numpy as np
+import mne
+from collections import Counter
+from sklearn.utils import resample
+
+def balance_by_SMOTE_or_duplication(data, labels, method="auto", k_base=5):
+    from collections import Counter
+    from sklearn.utils import resample
+    from imblearn.over_sampling import SMOTE
+
+    counter = Counter(labels)
+    print(f"[DEBUG] Conteggio classi prima: {counter}")
+    
+    min_class = min(counter.values())
+    k_neighbors = min(k_base, min_class - 1)
+
+    if method == "SMOTE" or (method == "auto" and k_neighbors >= 1):
+        print(f"[INFO] Applico SMOTE con k_neighbors={k_neighbors}")
+        X = data.reshape(len(data), -1)
+        sm = SMOTE(random_state=42, k_neighbors=k_neighbors)
+        X_res, y_res = sm.fit_resample(X, labels)
+        print(f"[DEBUG] Conteggio classi dopo SMOTE: {Counter(y_res)}")
+        return X_res.reshape(-1, data.shape[1], data.shape[2]), y_res
+
+    elif method == "duplicate" or (method == "auto" and k_neighbors < 1):
+        print("[INFO] Uso duplicazione per bilanciare le classi")
+        max_count = max(counter.values())
+        data_balanced, labels_balanced = [], []
+
+        for label in np.unique(labels):
+            class_data = data[labels == label]
+            class_labels = labels[labels == label]
+            class_data_res, class_labels_res = resample(
+                class_data, class_labels,
+                replace=True,
+                n_samples=max_count,
+                random_state=42
+            )
+            data_balanced.append(class_data_res)
+            labels_balanced.append(class_labels_res)
+
+        final_labels = np.concatenate(labels_balanced)
+        print(f"[DEBUG] Conteggio classi dopo duplicazione: {Counter(final_labels)}")
+        return np.concatenate(data_balanced), final_labels
+
+    else:
+        raise ValueError(f"Metodo di bilanciamento non valido: {method}")
+    
+def add_jitter(X, sigma=0.02):
+    """
+    Aggiunge rumore gaussiano ai dati EEG (data augmentation).
+
+    Parametri
+    ----------
+    X : np.ndarray
+        Dati EEG di forma (n_channels, window_samples)
+    sigma : float
+        Deviazione standard del rumore
+
+    Ritorna
+    -------
+    X_noisy : np.ndarray
+        Dati con rumore aggiunto
+    """
+    return X + sigma * np.random.randn(*X.shape)
+
+
+def load_BCI2b_data(data_path, subject, training=True,
+                            window_sec=3.0, step_sec=0.5,
+                            augment=False, balance=False, verbose=False):
+    import mne
+    import glob
+    import numpy as np
+    import os
+    from collections import Counter
+
+    fs = 250
+    window_samples = int(window_sec * fs)
+    step_samples = int(step_sec * fs)
+    target_channels = ['C3', 'Cz', 'C4']
+
+    file_suffix = 'T' if training else 'E'
+    subject_files = sorted(glob.glob(os.path.join(data_path, f"B{subject:02d}??{file_suffix}.gdf")))
+
+    if not subject_files:
+        raise FileNotFoundError(f"Nessun file trovato per il soggetto {subject} ({file_suffix})")
+
+    segments, labels = [], []
+
+    for gdf_file in subject_files:
+        raw = mne.io.read_raw_gdf(gdf_file, preload=True, verbose=False)
+        raw.filter(0.5, 45, fir_design='firwin', verbose=False)
+        raw.notch_filter(50, verbose=False)
+
+        sel_channels = [ch for ch in raw.info["ch_names"] if any(t in ch for t in target_channels)]
+        raw.pick_channels(sel_channels)
+
+        events, _ = mne.events_from_annotations(raw)
+        label_map = {1: 0, 2: 1}
+        events = [e for e in events if e[2] in label_map]
+
+        for e in events:
+            trial_start = e[0] + int(0.5 * fs)
+            trial_end = trial_start + int(4.0 * fs)
+
+            for t in range(trial_start, trial_end - window_samples + 1, step_samples):
+                if t + window_samples > raw.n_times:
+                    continue
+                seg = raw.get_data(start=t, stop=t + window_samples)
+
+                # Standardizzazione per canale
+                seg = (seg - np.mean(seg, axis=1, keepdims=True)) / \
+                      (np.std(seg, axis=1, keepdims=True) + 1e-6)
+
+                # Augment EEG-aware
+                if training and augment:
+                    if np.random.rand() < 0.3:
+                        seg += 0.005 * np.random.randn(*seg.shape)  # jitter lieve
+                    if np.random.rand() < 0.2:
+                        shift = np.random.randint(5, 15)
+                        seg = np.roll(seg, shift=shift, axis=1)  # time-shifting
+                    if np.random.rand() < 0.1:
+                        seg = seg * (1 + 0.01 * np.random.randn(*seg.shape))  # lievi distorsioni
+
+                segments.append(seg)
+                labels.append(label_map[e[2]])
+
+    if not segments:
+        raise ValueError(f"[ERRORE] Nessun segmento trovato per il soggetto {subject}")
+
+    X = np.stack(segments)
+    y = np.array(labels)
+
+    if balance and training:
+        counts = np.bincount(y)
+        if len(counts) == 2 and counts[0] != counts[1]:
+            maj_class = 0 if counts[0] > counts[1] else 1
+            diff = abs(counts[0] - counts[1])
+            idx_min = np.where(y != maj_class)[0]
+            X_extra = X[idx_min[:diff]]
+            y_extra = y[idx_min[:diff]]
+            X = np.concatenate([X, X_extra], axis=0)
+            y = np.concatenate([y, y_extra], axis=0)
+            if verbose:
+                print(f"[INFO] Bilanciamento duplicando classe minoritaria. Classi: {Counter(y)}")
+
+    if verbose:
+        print(f"[INFO] Soggetto {subject} - Segmenti totali: {X.shape[0]}, Finestra: {window_sec}s, Step: {step_sec}s")
+
+    return X, y
+
+#%%
 def standardize_data(X_train, X_test, channels): 
     # X_train & X_test :[Trials, MI-tasks, Channels, Time points]
     for j in range(channels):
@@ -312,47 +312,9 @@ def standardize_data(X_train, X_test, channels):
 
     return X_train, X_test
 
-"""
-def standardize_data(X_train, X_test, channels):
+#%%
+def get_data(path, subject, dataset = 'BCI2b', classes_labels = 'all', LOSO = False, isStandard = True, isShuffle = True):
     
-    #Versione migliorata con:
-    #- Standardizzazione più robusta mantenendo la struttura spaziotemporale
-    #- Gestione di eventuali NaN
-    #- Opzione per standardizzazione globale
-    
-    # Conserva la forma originale
-    original_shape_train = X_train.shape
-    original_shape_test = X_test.shape
-    
-    # Reshape per standardizzazione (considera tutti i punti temporali insieme)
-    X_train_reshaped = X_train.reshape(-1, channels, X_train.shape[-1])
-    X_test_reshaped = X_test.reshape(-1, channels, X_test.shape[-1])
-    
-    # Standardizzazione per ogni canale
-    for j in range(channels):
-        scaler = StandardScaler()
-        
-        # Estrai tutti i trial per il canale j
-        train_channel = X_train_reshaped[:, j, :]
-        test_channel = X_test_reshaped[:, j, :]
-        
-        # Rimuovi eventuali NaN
-        if np.isnan(train_channel).any():
-            train_channel = np.nan_to_num(train_channel, nan=np.nanmean(train_channel))
-        
-        # Fit e transform
-        scaler.fit(train_channel)
-        X_train_reshaped[:, j, :] = scaler.transform(train_channel)
-        X_test_reshaped[:, j, :] = scaler.transform(test_channel)
-    
-    # Ripristina la forma originale
-    X_train = X_train_reshaped.reshape(original_shape_train)
-    X_test = X_test_reshaped.reshape(original_shape_test)
-    
-    return X_train, X_test
-"""
-
-def get_data(path,subject,dataset='BCI2b',class_labels='all',LOSO=False,isStandard=True,isShuffle=True):
     # Load and split the dataset into training and testing 
     if LOSO:
         """ Loading and Dividing of the dataset based on the 
@@ -369,11 +331,14 @@ def get_data(path,subject,dataset='BCI2b',class_labels='all',LOSO=False,isStanda
             path = path + 's{:}/'.format(subject+1)
             X_train, y_train = load_BCI2a_data(path, subject+1, True)
             X_test, y_test = load_BCI2a_data(path, subject+1, False)
-        elif(dataset == 'BCI2b'):
-            #Path per i miei dati B0x0xT.gdf
+        elif (dataset == 'BCI2b'):
             path = path + '/'
-            X_train, y_train = load_BCI2b_data(path, subject+1, True)
+            X_train, y_train = load_BCI2b_data(path, subject+1, True,augment=True, balance=True)
             X_test, y_test = load_BCI2b_data(path, subject+1, False)
+            
+        # elif (dataset == 'HGD'):
+        #     X_train, y_train = load_HGD_data(path, subject+1, True)
+        #     X_test, y_test = load_HGD_data(path, subject+1, False)
         else:
             raise Exception("'{}' dataset is not supported yet!".format(dataset))
 
@@ -385,93 +350,14 @@ def get_data(path,subject,dataset='BCI2b',class_labels='all',LOSO=False,isStanda
     # Prepare training data     
     N_tr, N_ch, T = X_train.shape 
     X_train = X_train.reshape(N_tr, 1, N_ch, T)
-    y_train_onehot = to_categorical(y_train,num_classes=2)
+    y_train_onehot = to_categorical(y_train)
     # Prepare testing data 
     N_tr, N_ch, T = X_test.shape 
     X_test = X_test.reshape(N_tr, 1, N_ch, T)
-    y_test_onehot = to_categorical(y_test,num_classes=2)
-    
-    print(f"y_train_onehot shape: {y_train_onehot.shape}")
-    print(f"y_test_onehot shape: {y_test_onehot.shape}")    
+    y_test_onehot = to_categorical(y_test)    
     
     # Standardize the data
     if isStandard:
         X_train, X_test = standardize_data(X_train, X_test, N_ch)
 
     return X_train, y_train, y_train_onehot, X_test, y_test, y_test_onehot
-
-"""
-def get_data(path, subject, dataset='BCI2b', class_labels='all', LOSO=False, 
-             isStandard=True, isShuffle=True, balance_classes=True):
-    
-    #Versione migliorata con:
-    #- Opzione per bilanciamento delle classi
-    #- Migliore gestione degli shape
-    #- Controllo della distribuzione delle classi
-    #- Aggiunta di logging informativo
-    
-    # Caricamento dati originale
-    if LOSO:
-        X_train, y_train, X_test, y_test = load_data_LOSO(path, subject, dataset)
-    else:
-        if dataset == 'BCI2a':
-            path = path + 's{:}/'.format(subject+1)
-            X_train, y_train = load_BCI2a_data(path, subject+1, True)
-            X_test, y_test = load_BCI2a_data(path, subject+1, False)
-        elif dataset == 'BCI2b':
-            path = path + '/'
-            X_train, y_train = load_BCI2b_data(path, subject+1, True)
-            X_test, y_test = load_BCI2b_data(path, subject+1, False)
-        else:
-            raise ValueError(f"Dataset '{dataset}' non supportato")
-
-    # Analisi distribuzione classi
-    print("\nDistribuzione classi prima del bilanciamento:")
-    print(f"Training - Classe 0: {sum(y_train == 0)}, Classe 1: {sum(y_train == 1)}")
-    print(f"Test - Classe 0: {sum(y_test == 0)}, Classe 1: {sum(y_test == 1)}")
-
-    # Bilanciamento delle classi (solo training set)
-    if balance_classes:
-        from imblearn.over_sampling import SMOTE
-        
-        # Reshape per SMOTE (flatten temporale)
-        N_tr, N_ch, T = X_train.shape
-        X_train_flat = X_train.reshape(N_tr, -1)  # (trials, channels*time_points)
-        
-        # Applica SMOTE
-        smote = SMOTE(random_state=42)
-        X_train_balanced, y_train_balanced = smote.fit_resample(X_train_flat, y_train)
-        
-        # Ripristina la forma originale
-        X_train = X_train_balanced.reshape(-1, N_ch, T)
-        y_train = y_train_balanced
-        
-        print("\nDopo bilanciamento:")
-        print(f"Training - Classe 0: {sum(y_train == 0)}, Classe 1: {sum(y_train == 1)}")
-
-    # Shuffle
-    if isShuffle:
-        X_train, y_train = shuffle(X_train, y_train, random_state=42)
-        X_test, y_test = shuffle(X_test, y_test, random_state=42)
-
-    # Reshape per modello CNN (aggiungi dimensione MI-tasks)
-    X_train = X_train.reshape(-1, 1, X_train.shape[1], X_train.shape[2])
-    X_test = X_test.reshape(-1, 1, X_test.shape[1], X_test.shape[2])
-
-    # One-hot encoding
-    num_classes = len(np.unique(np.concatenate([y_train, y_test])))
-    y_train_onehot = to_categorical(y_train, num_classes=num_classes)
-    y_test_onehot = to_categorical(y_test, num_classes=num_classes)
-
-    # Standardizzazione
-    if isStandard:
-        X_train, X_test = standardize_data(X_train, X_test, X_train.shape[2])  # Numero canali
-
-    # Verifica finale
-    print("\nShape finali:")
-    print(f"X_train: {X_train.shape}, y_train: {y_train_onehot.shape}")
-    print(f"X_test: {X_test.shape}, y_test: {y_test_onehot.shape}")
-    
-    return X_train, y_train, y_train_onehot, X_test, y_test, y_test_onehot
-    
-"""

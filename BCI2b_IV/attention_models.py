@@ -41,7 +41,7 @@ def attention_block(in_layer, attention_model, ratio=8, residual = False, apply_
         out_layer = mha_block(in_layer, vanilla = False)
     elif attention_model == 'se':   # Squeeze-and-excitation layer
         if(in_len < 4):
-            in_layer = tf.expand_dims(in_layer, axis=expanded_axis)
+            in_layer = Lambda(lambda x: tf.expand_dims(x, axis=expanded_axis))(in_layer)
         out_layer = se_block(in_layer, ratio, residual, apply_to_input)
     elif attention_model == 'cbam': # Convolutional block attention module
         if(in_len < 4):
@@ -51,7 +51,7 @@ def attention_block(in_layer, attention_model, ratio=8, residual = False, apply_
         raise Exception("'{}' is not supported attention module!".format(attention_model))
         
     if (in_len == 3 and len(out_layer.shape) == 4):
-        out_layer = tf.squeeze(out_layer, expanded_axis)
+        out_layer = Lambda(lambda x: tf.squeeze(x, axis=expanded_axis))(out_layer)
     elif (in_len == 4 and len(out_layer.shape) == 3):
         out_layer = Reshape((in_sh[1], in_sh[2], in_sh[3]))(out_layer)
     return out_layer

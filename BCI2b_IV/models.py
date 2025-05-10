@@ -149,13 +149,13 @@ def RockNetA(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mh
                          weightDecay=conv_weightDecay, maxNorm=conv_maxNorm,
                          in_chans=in_chans, dropout=eegn_dropout)
     block1 = Lambda(lambda x: x[:, :, -1, :])(block1)
-
+    
     sw_concat = []
     for i in range(n_windows):
         st = i
         end = block1.shape[1] - n_windows + i + 1
         block2 = block1[:, st:end, :]
-
+    
         if attention is not None:
             if attention in ['se', 'cbam']:
                 block2 = Permute((2, 1))(block2)
@@ -169,6 +169,7 @@ def RockNetA(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mh
                             weightDecay=conv_weightDecay, maxNorm=conv_maxNorm,
                             dropout=tcn_dropout, activation=tcn_activation)
         block3 = Lambda(lambda x: x[:, -1, :])(block3)
+    
 
         if fuse == 'average':
             sw_concat.append(Dense(n_classes, kernel_regularizer=L2(dense_weightDecay))(block3))
@@ -185,7 +186,7 @@ def RockNetA(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mh
             sw_concat = sw_concat[0]
     elif fuse == 'concat':
         sw_concat = Dense(n_classes, kernel_regularizer=L2(dense_weightDecay))(sw_concat)
-
+    
     if from_logits:
         out = Activation('linear', name='linear')(sw_concat)
     else:
@@ -630,13 +631,8 @@ def Conv_block(input_layer, F1=4, kernLength=64, poolSize=8, D=2, in_chans=22, d
     return block3
 
 def Conv_block_(input_layer, F1=4, kernLength=64, poolSize=8, D=2, in_chans=22,
-                weightDecay = 0.009, maxNorm = 0.6, dropout=0.25):
-    """ Conv_block
-
-        Notes
-        -----
-        using  different regularization methods.
-    """
+                weightDecay = 0.009, maxNorm = 0.6, dropout=0.5):
+    """    """
 
     F2= F1*D
     block1 = Conv2D(F1, (kernLength, 1), padding = 'same', data_format='channels_last',
@@ -670,7 +666,10 @@ def Conv_block_(input_layer, F1=4, kernLength=64, poolSize=8, D=2, in_chans=22,
 
     block3 = AveragePooling2D((poolSize,1),data_format='channels_last')(block3)
     block3 = Dropout(dropout)(block3)
+    
+    
     return block3
+
 
 #%% Temporal convolutional (TC) block used in the ATCNet model
 def TCN_block(input_layer,input_dimension,depth,kernel_size,filters,dropout,activation='relu'):
@@ -751,6 +750,7 @@ def TCN_block_(input_layer,input_dimension,depth,kernel_size,filters, dropout,
     block = BatchNormalization()(block)
     block = Activation(activation)(block)
     block = Dropout(dropout)(block)
+    
     if(input_dimension != filters):
         conv = Conv1D(filters,kernel_size=1,
                     kernel_regularizer=L2(weightDecay),
