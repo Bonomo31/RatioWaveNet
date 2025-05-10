@@ -1,4 +1,4 @@
-# RockNetA: A Multi-Window Temporal-Attention Architecture with EEG-Specific Convolutions and TCNs for Robust Brain Signal Learning
+# RockNetA
 
 RockNetA is a custom deep learning architecture designed for the classification of EEG signals in Motor Imagery (MI) tasks. Inspired by existing models like EEGNet and ATCNet, RockNetA introduces a lightweight CNN framework enhanced with residual connections, dropout, and optimized temporal feature extraction.
 
