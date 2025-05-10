@@ -15,15 +15,15 @@
 |----------------|---------------|-------------|----------|-------------|----------|----------|--------|
 | RockNetA       | None          |      
 |                | RDWT          | 81.56       | 75.40    | 97.69       | 80.60    | 92.81    | 90.40  |
-| ATCNet         | None          | 79.71       | 72.90    | 
-|                | RDWT          | 79.51       | 72.70    |
-| EEGTCNet       | None          | 64.35       | 52.50    | 
-|                | RDWT          | 68.79       | 58.40    | 
+| ATCNet         | None          | 79.71       | 72.90    | 96.90       | 63.30    |
+|                | RDWT          | 79.51       | 72.70    | 96.74       | 61.90    |
+| EEGTCNet       | None          | 64.35       | 52.50    | 95.81       | 58.90    |
+|                | RDWT          | 68.79       | 58.40    | 96.09       | 66.60    |
 | MBEEG_SENet    | None          | 70.49       | 60.60    |
 |                | RDWT          | 72.72       | 63.60    |
-| ShallowConvNet | None          | 65.74       | 54.30    |
-|                | RDWT          | 66.32       | 55.10    |
+| ShallowConvNet | None          | 65.74       | 54.30    | 96.13       | 60.70    |
+|                | RDWT          | 66.32       | 55.10    | 95.94       | 62.30    |
 | EEGNet         | None          | 70.79       | 61.10    | 
 |                | RDWT          | 70.10       | 60.10    |
 
-
+> **Note**: *Unlike the previous table, the results reported here for the HGD and BCI IV-2b datasets include an enhanced preprocessing pipeline, which incorporates data augmentation and class balancing techniques. These strategies were employed to address class imbalance and improve the generalization capabilities of the models.*
