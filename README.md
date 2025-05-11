@@ -43,7 +43,7 @@ In particular, the results highlight the performance improvements achieved by [*
 
 | Model           | Preprocessing | BCI 2a Acc. | BCI 2a κ | BCI 2b Acc. | BCI 2b κ | HGD Acc. | HGD κ |
 |----------------|---------------|-------------|----------|-------------|----------|----------|--------|
-| RockNetA       | None          |      
+| RockNetA       | None          | 79.36       | 72.50    | 97.00       | 69.80    | 87.45    | 83.30  |
 |                | RDWT          | 81.56       | 75.40    | 97.69       | 80.60    | 92.81    | 90.40  |
 | ATCNet         | None          | 79.71       | 72.90    | 96.90       | 63.30    | 88.88    | 85.20  |
 |                | RDWT          | 79.51       | 72.70    | 96.74       | 61.90    | 88.26    | 84.30  |
@@ -51,8 +51,8 @@ In particular, the results highlight the performance improvements achieved by [*
 |                | RDWT          | 68.79       | 58.40    | 96.09       | 66.60    | 87.14    | 82.90  |
 | MBEEG_SENet    | None          | 70.49       | 60.60    | 96.95       | 73.80    | 90.58    | 87.40  |
 |                | RDWT          | 72.72       | 63.60    | 96.28       | 63.50    | 90.26    | 87.00  |         
-| ShallowConvNet | None          | 65.74       | 54.30    | 96.13       | 60.70    |
-|                | RDWT          | 66.32       | 55.10    | 95.94       | 62.30    |
+| ShallowConvNet | None          | 65.74       | 54.30    | 96.13       | 60.70    | 87.05    | 82.70  |
+|                | RDWT          | 66.32       | 55.10    | 95.94       | 62.30    | 87.27    | 87.27  |
 | EEGNet         | None          | 70.79       | 61.10    | 95.85       | 59.60    | 87.32    | 83.10  |
 |                | RDWT          | 70.10       | 60.10    | 96.06       | 64.00    | 88.08    | 84.10  |
 
