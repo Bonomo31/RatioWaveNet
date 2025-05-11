@@ -7,7 +7,7 @@ Authors :
 University of Palermo, Italia 
 
 ---
-In addition to the proposed [**RockNetA**](https://github.com/Bonomo31/) model, the repository includes implementations of several other well-known EEG classification architectures in the `models.py` file, which can be used as baselines for comparison with RockNetA. These include:
+In addition to the proposed [**RockNetA**](https://github.com/Bonomo31/RockNetA) model, the repository includes implementations of several other well-known EEG classification architectures in the `models.py` file, which can be used as baselines for comparison with RockNetA. These include:
 
 - [**ATCNet**](https://ieeexplore.ieee.org/document/9852687), [original code](https://github.com/Altaheri/EEG-ATCNet)
 - [**EEGNet**](https://arxiv.org/abs/1611.08024), [original code](https://github.com/vlawhern/arl-eegmodels)
@@ -15,7 +15,7 @@ In addition to the proposed [**RockNetA**](https://github.com/Bonomo31/) model, 
 - [**MBEEG_SENet**](https://ieeexplore.ieee.org/document/9444761)
 - [**ShallowConvNet**](https://arxiv.org/abs/1703.05051), [original code](https://github.com/robintibor/braindecode)
 
-The following table summarizes the classification performance of [**RockNetA**](https://github.com/Bonomo31/) and the other reproduced models, based on the experimental setup defined in the notebook for each model and dataset.
+The following table summarizes the classification performance of [**RockNetA**](https://github.com/Bonomo31/RockNetA) and the other reproduced models, based on the experimental setup defined in the notebook for each model and dataset.
 
 
 | Model           | #params | BCI 4-2a Accuracy | BCI 4-2a Kappa | BCI 4-2b Accuracy | BCI 4-2b Kappa | HGD Accuracy | HGD Kappa |
@@ -37,9 +37,7 @@ The following table summarizes the classification performance of [**RockNetA**](
 
 The following table presents a comparative analysis of different deep learning models with and without the application of the RDWT (Redundant Discrete Wavelet Transform) preprocessing technique. The evaluation covers three benchmark EEG motor imagery datasets: BCI Competition IV-2a, BCI Competition IV-2b, and the High-Gamma Dataset (HGD). The aim is to assess the impact of RDWT on classification performance (accuracy and Cohen’s kappa score).
 
-In particular, the results highlight the performance improvements achieved by [**RockNetA**](https://github.com/Bonomo31/) when combined with the RDWT preprocessing, compared to both its baseline (no preprocessing) and other well-established architectures.
-
-> **Note**: *Unlike the previous table, the results reported here for the HGD and BCI IV-2b datasets include an enhanced preprocessing pipeline, which incorporates data augmentation and class balancing techniques. These strategies were employed to address class imbalance and improve the generalization capabilities of the models.*
+In particular, the results highlight the performance improvements achieved by [**RockNetA**](https://github.com/Bonomo31/RockNetA) when combined with the RDWT preprocessing, compared to both its baseline (no preprocessing) and other well-established architectures.
 
 
 | Model           | Preprocessing | BCI 2a Acc. | BCI 2a κ | BCI 2b Acc. | BCI 2b κ | HGD Acc. | HGD κ |
@@ -59,7 +57,7 @@ In particular, the results highlight the performance improvements achieved by [*
 
 ### **Note**   
 > - The recomputed results for these datasets (including accuracy/kappa scores) are available in their respective dataset folders.  
-> These values were obtained using our implementation and preprocessing pipeline. Minor deviations from the original papers are expected. 
+> - *Unlike the previous table, the results reported here for the HGD and BCI IV-2b datasets include an enhanced preprocessing pipeline, which incorporates data augmentation and class balancing techniques. These strategies were employed to address class imbalance and improve the generalization capabilities of the models.*
 
 ----
 # Dataset
