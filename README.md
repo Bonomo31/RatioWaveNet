@@ -58,6 +58,7 @@ In particular, the results highlight the performance improvements achieved by [*
 ### **Note**   
 > - The recomputed results for these datasets (including accuracy/kappa scores) are available in their respective dataset folders.  
 > - *Unlike the previous table, the results reported here for the HGD and BCI IV-2b datasets include an enhanced preprocessing pipeline, which incorporates data augmentation and class balancing techniques. These strategies were employed to address class imbalance and improve the generalization capabilities of the models.*
+> - These values were obtained using our implementation and preprocessing pipeline. Minor deviations from the original papers are expected.
 
 ----
 # Dataset
