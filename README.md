@@ -27,9 +27,10 @@ The following table summarizes the classification performance of [**RockNetA**](
 | ShallowConvNet  | 47,310  | 80.52             | 74.02          | 86.02             | 72.38          | 87.00        | 82.67     |
 | EEGNet          | 2,548   | 77.68             | 70.24          | 86.08             | 72.13          | 88.25        | 84.33     |
 
-> **Note**: *HGD = High Gamma Dataset*
+### **Disclaimer**   
+> - The results reported for**BCI 4-2a**, **BCI 4-2b** and **HGD** datasets were not recomputed by us and are directly extracted from the original papers.  
+> - **HGD (High Gamma Dataset)**: Refers to physically executed movements (executed movements), not motor imagery (motor imagery).
 
-> please note that HGD is for "executed movements" NOT "motor imagery"
 
 ----
 # Comparative preprocessing  
@@ -55,6 +56,10 @@ In particular, the results highlight the performance improvements achieved by [*
 |                | RDWT          | 66.32       | 55.10    | 95.94       | 62.30    | 87.27    | 87.27  |
 | EEGNet         | None          | 70.79       | 61.10    | 95.85       | 59.60    | 87.32    | 83.10  |
 |                | RDWT          | 70.10       | 60.10    | 96.06       | 64.00    | 88.08    | 84.10  |
+
+### **Note**   
+> - The recomputed results for these datasets (including accuracy/kappa scores) are available in their respective dataset folders.  
+> These values were obtained using our implementation and preprocessing pipeline. Minor deviations from the original papers are expected. 
 
 ----
 # Dataset
