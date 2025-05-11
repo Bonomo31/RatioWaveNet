@@ -9,11 +9,11 @@ University of Palermo, Italia
 ---
 In addition to the proposed [**RockNetA**](https://github.com/Bonomo31/RockNetA) model, the repository includes implementations of several other well-known EEG classification architectures in the `models.py` file, which can be used as baselines for comparison with RockNetA. These include:
 
-- [**ATCNet**](https://ieeexplore.ieee.org/document/9852687), [original code](https://github.com/Altaheri/EEG-ATCNet)
-- [**EEGNet**](https://arxiv.org/abs/1611.08024), [original code](https://github.com/vlawhern/arl-eegmodels)
-- [**EEG-TCNet**](https://ieeexplore.ieee.org/document/9222561), [original code](https://github.com/EndlessSora/EEG-TCNet)
-- [**MBEEG_SENet**](https://ieeexplore.ieee.org/document/9444761)
-- [**ShallowConvNet**](https://arxiv.org/abs/1703.05051), [original code](https://github.com/robintibor/braindecode)
+- **ATCNet**:[paper](https://ieeexplore.ieee.org/document/9852687), [original code](https://github.com/Altaheri/EEG-ATCNet)
+- **EEGNet**:[paper](https://arxiv.org/abs/1611.08024), [original code](https://github.com/vlawhern/arl-eegmodels)
+- **EEG-TCNet**:[paper](https://arxiv.org/abs/2006.00622), [original code](https://github.com/iis-eth-zurich/eeg-tcnet)
+- **MBEEG_SENet**:[paper](https://www.mdpi.com/2075-4418/12/4/995)
+- **ShallowConvNet**:[paper](https://onlinelibrary.wiley.com/doi/full/10.1002/hbm.23730), [original code](https://github.com/braindecode/braindecode)
 
 The following table summarizes the classification performance of [**RockNetA**](https://github.com/Bonomo31/RockNetA) and the other reproduced models, based on the experimental setup defined in the notebook for each model and dataset.
 
