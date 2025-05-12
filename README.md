@@ -1,13 +1,13 @@
-# RockNetA
+# RatioWaveNet
 
-RockNetA is a custom deep learning architecture designed for the classification of EEG signals in Motor Imagery (MI) tasks. Inspired by existing models like EEGNet and ATCNet, RockNetA introduces a lightweight CNN framework enhanced with residual connections, dropout, and optimized temporal feature extraction.
+RatioWaveNet is a custom deep learning architecture designed for the classification of EEG signals in Motor Imagery (MI) tasks. Inspired by existing models like EEGNet and ATCNet, RatioWaveNet introduces a lightweight CNN framework enhanced with residual connections, dropout, and optimized temporal feature extraction.
 
 Authors : Giuseppe Bonomo, Marco Siino, Rosario Sorbello
 
 University of Palermo, Italia 
 
 ---
-In addition to the proposed [**RockNetA**](https://github.com/Bonomo31/RockNetA) model, the repository includes implementations of several other well-known EEG classification architectures in the `models.py` file, which can be used as baselines for comparison with RockNetA. These include:
+In addition to the proposed [**RatioWaveNet**](https://github.com/Bonomo31/RatioWaveNet) model, the repository includes implementations of several other well-known EEG classification architectures in the `models.py` file, which can be used as baselines for comparison with RatioWaveNet. These include:
 
 - **ATCNet**:[paper](https://ieeexplore.ieee.org/document/9852687), [original code](https://github.com/Altaheri/EEG-ATCNet)
 - **EEGNet**:[paper](https://arxiv.org/abs/1611.08024), [original code](https://github.com/vlawhern/arl-eegmodels)
@@ -15,12 +15,12 @@ In addition to the proposed [**RockNetA**](https://github.com/Bonomo31/RockNetA)
 - **MBEEG_SENet**:[paper](https://www.mdpi.com/2075-4418/12/4/995)
 - **ShallowConvNet**:[paper](https://onlinelibrary.wiley.com/doi/full/10.1002/hbm.23730), [original code](https://github.com/braindecode/braindecode)
 
-The following table summarizes the classification performance of [**RockNetA**](https://github.com/Bonomo31/RockNetA) and the other reproduced models, based on the experimental setup defined in the notebook for each model and dataset.
+The following table summarizes the classification performance of [**RatioWaveNet**](https://github.com/Bonomo31/RatioWaveNet) and the other reproduced models, based on the experimental setup defined in the notebook for each model and dataset.
 
 
 | Model           | #params | BCI 4-2a Accuracy | BCI 4-2a Kappa | BCI 4-2b Accuracy | BCI 4-2b Kappa | HGD Accuracy | HGD Kappa |
 |-----------------|---------|-------------------|----------------|-------------------|----------------|--------------|-----------|
-| RockNetA        | 113,732 | 81.56             | 75.40          | 97.69             | 80.60          | 92.81        | 90.40     |
+| RatioWaveNet        | 113,732 | 81.56             | 75.40          | 97.69             | 80.60          | 92.81        | 90.40     |
 | ATCNet          | 113,732 | 81.10             | 79.73          | 89.41             | 78.80          | 92.05        | 89.40     |
 | EEGTCNet        | 4,096   | 77.97             | 70.63          | 83.69             | 67.31          | 87.80        | 83.73     |
 | MBEEG_SENet     | 10,170  | 79.98             | 73.30          | 86.53             | 73.02          | 90.13        | 86.84     |
@@ -37,12 +37,12 @@ The following table summarizes the classification performance of [**RockNetA**](
 
 The following table presents a comparative analysis of different deep learning models with and without the application of the RDWT (Redundant Discrete Wavelet Transform) preprocessing technique. The evaluation covers three benchmark EEG motor imagery datasets: BCI Competition IV-2a, BCI Competition IV-2b, and the High-Gamma Dataset (HGD). The aim is to assess the impact of RDWT on classification performance (accuracy and Cohen’s kappa score).
 
-In particular, the results highlight the performance improvements achieved by [**RockNetA**](https://github.com/Bonomo31/RockNetA) when combined with the RDWT preprocessing, compared to both its baseline (no preprocessing) and other well-established architectures.
+In particular, the results highlight the performance improvements achieved by [**RatioWaveNet**](https://github.com/Bonomo31/RatioWaveNet) when combined with the RDWT preprocessing, compared to both its baseline (no preprocessing) and other well-established architectures.
 
 
 | Model           | Preprocessing | BCI 2a Acc. | BCI 2a κ | BCI 2b Acc. | BCI 2b κ | HGD Acc. | HGD κ |
 |----------------|---------------|-------------|----------|-------------|----------|----------|--------|
-| RockNetA       | None          | 79.36       | 72.50    | 97.00       | 69.80    | 87.45    | 83.30  |
+| RatioWaveNet       | None          | 79.36       | 72.50    | 97.00       | 69.80    | 87.45    | 83.30  |
 |                | RDWT          | 81.56       | 75.40    | 97.69       | 80.60    | 92.81    | 90.40  |
 | ATCNet         | None          | 79.71       | 72.90    | 96.90       | 63.30    | 88.88    | 85.20  |
 |                | RDWT          | 79.51       | 72.70    | 96.74       | 61.90    | 88.26    | 84.30  |
@@ -61,6 +61,23 @@ In particular, the results highlight the performance improvements achieved by [*
 > - These values were obtained using our implementation and preprocessing pipeline. Minor deviations from the original papers are expected.
 
 ----
+
+# None vs STFT vs RDWT in RatioWaveNet
+
+| Dataset                  | Preprocessing | Accuracy (%) | Kappa (κ) |
+|--------------------------|---------------|--------------|-----------|
+| **BCI Competition IV-2a**| None          | 79.36        | 72.50     |
+|                          | STFT          | 79.09        | 72.10     |
+|                          | RDWT          | 81.56        | 75.40     |
+| **BCI Competition IV-2b**| None          | 97.00        | 69.80     |
+|                          | STFT          | 97.23        | 67.60     |
+|                          | RDWT          | 97.69        | 80.60     |
+| **High-Gamma Dataset**   | None          | 87.45        | 83.30     |
+|                          | STFT          | 89.20        | 85.00     |
+|                          | RDWT          | 92.81        | 90.40     |
+
+---
+
 # Dataset
 
 This project uses three publicly available EEG motor imagery datasets for training and evaluation:

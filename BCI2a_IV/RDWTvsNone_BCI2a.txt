@@ -196,6 +196,22 @@ Average - all seeds (acc %): 79.36
 Inference time: 0.33 ms per trial
 ----------------------------------
 
+Preprocessing - STFT
+
+---------------------------------
+Test performance (acc & k-score):
+---------------------------------
+                  sub_1   sub_2   sub_3   sub_4   sub_5   sub_6   sub_7   sub_8   sub_9     average
+                  -----   -----   -----   -----   -----   -----   -----   -----   -----     -------
+Seed 1: (acc %)   88.19   61.81   94.79   77.43   69.79   70.49   86.11   78.47   84.72     79.09   
+        (k-sco)   0.843   0.491   0.931   0.699   0.597   0.606   0.815   0.713   0.796     0.721   
+----------------------------------
+Average - all seeds (acc %): 79.09
+                    (k-sco): 0.721
+
+Inference time: 0.37 ms per trial
+----------------------------------
+
 
 Preprocessing - RDWT
 
@@ -213,3 +229,5 @@ Average - all seeds (acc %): 81.56
 
 Inference time: 0.35 ms per trial
 ----------------------------------
+
+
