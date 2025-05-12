@@ -170,7 +170,7 @@ Average - all seeds (acc %): 96.28
 Inference time: 2.58 ms per trial
 ----------------------------------
 
-RockNetA
+RatioWaveNet
 
 Preprocessing - None
 
