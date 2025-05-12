@@ -73,7 +73,7 @@ In particular, the results highlight the performance improvements achieved by [*
 |                          | STFT          | 97.23        | 67.60     |
 |                          | RDWT          | 97.69        | 80.60     |
 | **High-Gamma Dataset**   | None          | 87.45        | 83.30     |
-|                          | STFT          | 89.20        | 85.00     |
+|                          | STFT          | 88.57        | 84.80     |
 |                          | RDWT          | 92.81        | 90.40     |
 
 ---
