@@ -174,7 +174,7 @@ Inference time: 0.48 ms per trial
 ----------------------------------
 
 
-RockNetA
+RatioWaveNet
 
 Preprocessing - None
 

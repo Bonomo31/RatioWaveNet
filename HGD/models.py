@@ -127,8 +127,8 @@ def RockNet_(n_classes, in_chans = 22, in_samples = 1125, n_windows = 5, attenti
     return Model(inputs = input_1, outputs = out)
 
 
-#%% RockNetA model
-def RockNetA(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mha',
+#%% RatioWaveNet model
+def RatioWaveNet(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mha',
              eegn_F1=16, eegn_D=2, eegn_kernelSize=64, eegn_poolSize=7, eegn_dropout=0.5,
              tcn_depth=2, tcn_kernelSize=4, tcn_filters=32, tcn_dropout=0.3,
              tcn_activation='elu', fuse='average'):
