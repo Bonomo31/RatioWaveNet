@@ -79,7 +79,7 @@ In particular, the results highlight the performance improvements achieved by [*
 ---
 
 # About RatioWaveNet
-![RDWT + RatioWaveNet Architecture](Old/4.png)
+![RDWT + RatioWaveNet Architecture](Model.png)
 
 
 ---
