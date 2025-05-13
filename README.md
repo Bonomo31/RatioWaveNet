@@ -78,6 +78,12 @@ In particular, the results highlight the performance improvements achieved by [*
 
 ---
 
+# About RatioWaveNet
+![RDWT + RatioWaveNet Architecture](Old/4.png)
+
+
+---
+
 # Dataset
 
 This project uses three publicly available EEG motor imagery datasets for training and evaluation:
