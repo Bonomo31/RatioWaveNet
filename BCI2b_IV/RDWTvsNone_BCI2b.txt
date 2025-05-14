@@ -33,6 +33,7 @@ Average - all seeds (acc %): 96.74
 
 Inference time: 4.21 ms per trial
 ----------------------------------
+
 EEGTC
 
 Preprocessing - None
