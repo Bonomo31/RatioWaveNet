@@ -1,6 +1,0 @@
-BCI2b
-
-No threshold 
-
-Interpolazzione
-
