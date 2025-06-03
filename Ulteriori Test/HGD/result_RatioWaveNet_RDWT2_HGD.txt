@@ -16,7 +16,7 @@ Average - all seeds (acc %): 88.17
 Inference time: 0.52 ms per trial
 ----------------------------------
 
-Interpolazzione
+Interpolazione
 
 ---------------------------------
 Test performance (acc & k-score):
