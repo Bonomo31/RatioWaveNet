@@ -10,10 +10,8 @@ Old
 .DS_Store
 BCI2b_IV/.DS_Store
 HGD/.DS_Store
-commands
 BCI2a_IV/offline_commands.py
 BCI2b_IV/offline_commands.py
 HGD/offline_commands.py
 16473_RatioWaveNet.pdf
-Commands_unity.ipynb
 provacommands.ipynb
