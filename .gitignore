@@ -1,7 +1,7 @@
 HGD/dataset
 HGD/test_comandi.ipynb
-BCI2b_IV/dataset
-BCI2a_IV/dataset
+#BCI2b_IV/dataset
+#BCI2a_IV/dataset
 HGD/preprocessRDWT.py
 BCI2b_IV/preprocessRDWT.py
 BCI2a_IV/preprocessRDWT.py
@@ -15,3 +15,5 @@ BCI2b_IV/offline_commands.py
 HGD/offline_commands.py
 16473_RatioWaveNet.pdf
 provacommands.ipynb
+DATI ERRORI RL
+CASPER_RatioWaveNet
