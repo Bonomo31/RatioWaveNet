@@ -80,6 +80,29 @@ def load_data_LOSO (data_path, subject, dataset):
 
     return X_train, y_train, X_test, y_test
 
+"""
+def load_data_LOSO(data_path, subject, dataset):
+    X_train_list, y_train_list = [], []
+    X_test, y_test = None, None
+
+    for sub in range(14):
+        path = data_path + '/'
+        X1, y1 = load_HGD_data(path, sub+1, True)
+        X2, y2 = load_HGD_data(path, sub+1, False)
+
+        if sub == subject:
+            # SOLO sessione 2 del left-out
+            X_test, y_test = X2, y2
+        else:
+            # SOLO sessione 1 degli altri
+            X_train_list.append(X1)
+            y_train_list.append(y1)
+
+    X_train = np.concatenate(X_train_list, axis=0)
+    y_train = np.concatenate(y_train_list, axis=0)
+
+    return X_train, y_train, X_test, y_test
+"""
 
 #%%
 def scale(signal, sigma=0.1):

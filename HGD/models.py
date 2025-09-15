@@ -34,10 +34,333 @@ from tensorflow.keras.layers import BatchNormalization, LayerNormalization, Flat
 from tensorflow.keras.layers import Add, Concatenate, Lambda, Input, Permute, Multiply
 from tensorflow.keras.regularizers import L2
 from tensorflow.keras.constraints import max_norm
-
+from tensorflow.keras.utils import register_keras_serializable
+import numpy as np
+from tensorflow import keras
 from tensorflow.keras import backend as K
 
 from attention_models import attention_block
+
+
+
+@register_keras_serializable(package="bci_layers")
+class RDWTLayer(keras.layers.Layer):
+    """
+    Trainable RDWT-like front-end (kernel length fixed, rational scales trainable).
+    Input:  (B, T, C)
+    Output: (B, T, C)  == approx_L + sum(soft(detail_l))
+    """
+    def __init__(
+        self,
+        levels=4,
+        init_wavelet='db4',
+        init_dilations=(1.5, 5/3, 7/4, 9/5),
+        base_kernel_len=16,
+        share_filters_across_channels=True,   # attualmente: filtri condivisi
+        use_soft_threshold=True,
+        threshold_init=0.0,
+        train_filter_shapes=False,            # True = rende lo/hi base trainabili
+        l2_on_logscale=0.0,                   # e.g., 1e-4
+        max_scale=None,                       # e.g., 4.0 per clip
+        details_from_input=True,              # True: hp su x (consiglio); False: su approx
+        name='rdwt',
+        **kwargs
+    ):
+        super().__init__(name=name, **kwargs)
+        self.levels = int(levels)
+        self.init_wavelet = init_wavelet
+        self.init_dilations = np.array(init_dilations, dtype=np.float32)
+        assert len(self.init_dilations) >= self.levels, "init_dilations deve avere >= levels elementi."
+        self.base_kernel_len = int(base_kernel_len)
+        self.share_filters = bool(share_filters_across_channels)
+        self.use_soft_threshold = bool(use_soft_threshold)
+        self.threshold_init = float(threshold_init)
+        self.train_filter_shapes = bool(train_filter_shapes)
+        self.l2_on_logscale = float(l2_on_logscale)
+        self.max_scale = None if max_scale is None else float(max_scale)
+        self.details_from_input = bool(details_from_input)
+
+        # db4 prototipi (fallback se niente pywt)
+        self._db4_lp = tf.constant([
+            -0.010597401784997278,  0.032883011666982945,  0.030841381835560763, -0.18703481171888114,
+            -0.02798376941698385,   0.6308807679398587,    0.7148465705529154,    0.2303778133088964
+        ], dtype=tf.float32)
+        self._db4_hp = tf.constant([
+            -0.2303778133088964,    0.7148465705529154,   -0.6308807679398587,   -0.02798376941698385,
+             0.18703481171888114,   0.030841381835560763, -0.032883011666982945, -0.010597401784997278
+        ], dtype=tf.float32)
+
+    @staticmethod
+    def _resample_keep_len_center(kernel, scale, out_len):
+        """
+        Ridilata 'kernel' mantenendo la stessa lunghezza out_len,
+        con mappatura centrata: u = c + (t - c)/scale.
+        """
+        K = tf.shape(kernel)[0]
+        Kf = tf.cast(K, tf.float32)
+        c = 0.5*(Kf - 1.0)
+        t = tf.range(out_len, dtype=tf.float32)
+        u = c + (t - c)/tf.cast(scale, tf.float32)
+
+        u0 = tf.floor(u)
+        u1 = u0 + 1.0
+        w1 = u - u0
+        w0 = 1.0 - w1
+
+        i0 = tf.cast(tf.clip_by_value(u0, 0.0, Kf-1.0), tf.int32)
+        i1 = tf.cast(tf.clip_by_value(u1, 0.0, Kf-1.0), tf.int32)
+
+        v0 = tf.gather(kernel, i0)
+        v1 = tf.gather(kernel, i1)
+        return w0*v0 + w1*v1  # [out_len]
+
+    @staticmethod
+    def _l1_normalize(vec, eps=1e-6):
+        s = tf.reduce_sum(tf.abs(vec)) + eps
+        return vec / s
+
+    @staticmethod
+    def _zero_mean_unit_l1(vec, eps=1e-6):
+        v = vec - tf.reduce_mean(vec)
+        s = tf.reduce_sum(tf.abs(v)) + eps
+        return v / s
+
+    @staticmethod
+    def _soft_threshold(x, tau):
+        return tf.sign(x) * tf.nn.relu(tf.abs(x) - tau)
+
+    def build(self, input_shape):
+        _, T, C = input_shape
+        self.channels = int(C)
+
+        # Inizializza prototipi (8 tap db4 → riscalati a base_kernel_len una sola volta)
+        lo = self._resample_keep_len_center(self._db4_lp, 1.0, self.base_kernel_len)
+        hi = self._resample_keep_len_center(self._db4_hp, 1.0, self.base_kernel_len)
+
+        lo_mat = tf.tile(tf.reshape(lo, [1, self.base_kernel_len]), [self.levels, 1])
+        hi_mat = tf.tile(tf.reshape(hi, [1, self.base_kernel_len]), [self.levels, 1])
+
+        self.lo_base = self.add_weight(
+            name='lo_base',
+            shape=(self.levels, self.base_kernel_len),
+            dtype=tf.float32,
+            initializer=keras.initializers.Constant(lo_mat),
+            trainable=self.train_filter_shapes,
+        )
+        self.hi_base = self.add_weight(
+            name='hi_base',
+            shape=(self.levels, self.base_kernel_len),
+            dtype=tf.float32,
+            initializer=keras.initializers.Constant(hi_mat),
+            trainable=self.train_filter_shapes,
+        )
+
+        # log_d init = softplus^{-1}(d - 1)
+        log_d_init = np.log(np.expm1(self.init_dilations[:self.levels] - 1.0) + 1e-6).astype(np.float32)
+        self.log_d = self.add_weight(
+            name='log_d',
+            shape=(self.levels,),
+            dtype=tf.float32,
+            initializer=keras.initializers.Constant(log_d_init),
+            trainable=True,
+        )
+
+        if self.use_soft_threshold:
+            # tau per livello e canale (broadcastabile su (B,1,T,C))
+            self.tau = self.add_weight(
+                name='tau',
+                shape=(self.levels, 1, self.channels),
+                dtype=tf.float32,
+                initializer=keras.initializers.Constant(self.threshold_init),
+                trainable=True,
+            )
+        else:
+            self.tau = None
+
+        super().build(input_shape)
+
+    def call(self, x, training=None):
+        B = tf.shape(x)[0]
+        T = tf.shape(x)[1]
+        C = tf.shape(x)[2]
+
+        x4 = tf.expand_dims(x, axis=1)  # (B,1,T,C)
+
+        approx = x4
+        details_sum = 0.0
+
+        # scale effettive
+        scales = 1.0 + tf.nn.softplus(self.log_d)  # (L,)
+        if self.max_scale is not None:
+            scales = tf.clip_by_value(scales, 1e-3, self.max_scale)
+
+        for i in range(self.levels):
+            s = scales[i]
+
+            lo_i = self._resample_keep_len_center(self.lo_base[i], s, self.base_kernel_len)
+            hi_i = self._resample_keep_len_center(self.hi_base[i], s, self.base_kernel_len)
+
+            lo_i = self._l1_normalize(lo_i)
+            hi_i = self._zero_mean_unit_l1(hi_i)
+
+            # (1,K, C,1)
+            lo_ker = tf.tile(tf.reshape(lo_i, (1, self.base_kernel_len, 1, 1)), [1,1,C,1])
+            hi_ker = tf.tile(tf.reshape(hi_i, (1, self.base_kernel_len, 1, 1)), [1,1,C,1])
+
+            approx = tf.nn.depthwise_conv2d(approx, lo_ker, strides=[1,1,1,1], padding='SAME', data_format='NHWC')
+
+            src_for_hp = x4 if self.details_from_input else approx
+            #detail_i = tf.nn.depthwise_conv2d(src_for_hp, hi_ker, strides=[1,1,1,1], padding='SAME', data_format='NHWC')
+            detail_i = tf.nn.depthwise_conv2d(x4, hi_ker, strides=[1,1,1,1], padding='SAME', data_format='NHWC')
+
+
+            if self.use_soft_threshold:
+                # tau[i] shape: (1,C) → broadcast a (B,1,T,C)
+                tau_i = tf.reshape(self.tau[i], [1,1,1,C])
+                detail_i = self._soft_threshold(detail_i, tau_i)
+
+            details_sum = details_sum + detail_i
+
+        y = tf.squeeze(approx + details_sum, axis=1)  # (B,T,C)
+
+        if self.l2_on_logscale > 0.0:
+            self.add_loss(self.l2_on_logscale * tf.reduce_mean(self.log_d * self.log_d))
+
+        return y
+
+    def get_config(self):
+        cfg = super().get_config()
+        cfg.update(dict(
+            levels=self.levels,
+            init_wavelet=self.init_wavelet,
+            init_dilations=self.init_dilations.tolist(),
+            base_kernel_len=self.base_kernel_len,
+            share_filters_across_channels=self.share_filters,
+            use_soft_threshold=self.use_soft_threshold,
+            threshold_init=self.threshold_init,
+            train_filter_shapes=self.train_filter_shapes,
+            l2_on_logscale=self.l2_on_logscale,
+            max_scale=self.max_scale,
+            details_from_input=self.details_from_input,
+            name=self.name,
+        ))
+        return cfg
+
+
+
+def RDWT_block_(input_layer,
+                levels=4,
+                init_wavelet='db4',
+                init_dilations=(1.5, 5/3, 7/4, 9/5),
+                base_kernel_len=16,
+                use_soft_threshold=True,
+                name='rdwt'):
+    """
+    input_layer: Tensor (B, T, C, 1)  [come nel tuo pipeline dopo Permute((3,2,1))]
+    output:      Tensor (B, T, C, 1)
+    """
+    # squeeze asse finale per lavorare come (B, T, C)
+    x = tf.keras.layers.Lambda(lambda t: tf.squeeze(t, axis=-1), name=f'{name}_squeeze')(input_layer)
+
+    # layer RDWT trainabile (definito qui nello stesso file, vedi sezione B)
+    x = RDWTLayer(levels=levels,
+                  init_wavelet=init_wavelet,
+                  init_dilations=init_dilations,
+                  base_kernel_len=base_kernel_len,
+                  use_soft_threshold=use_soft_threshold,
+                  name=name)(x)
+
+    # reintroduci asse finale per tornare a (B, T, C, 1)
+    x = tf.keras.layers.Lambda(lambda t: tf.expand_dims(t, axis=-1), name=f'{name}_unsqueeze')(x)
+    return x
+
+
+def RatioWaveNet2(n_classes, in_chans=22, in_samples=1125, n_windows=5, attention='mha',
+            eegn_F1=16, eegn_D=2, eegn_kernelSize=64, eegn_poolSize=7, eegn_dropout=0.5,
+            tcn_depth=2, tcn_kernelSize=4, tcn_filters=32, tcn_dropout=0.3,
+            tcn_activation='elu', fuse='average',use_rdwt=True, rdwt_levels=4, rdwt_wavelet='db4',
+            rdwt_init_dilations=(1.5, 5/3, 7/4, 9/5), rdwt_kernel_len=16,
+            rdwt_soft_threshold=True):
+
+    input_1 = Input(shape=(1, in_chans, in_samples))
+    input_2 = Permute((3, 2, 1))(input_1)
+
+    dense_weightDecay = 0.5
+    conv_weightDecay = 0.009
+    conv_maxNorm = 0.6
+    from_logits = False
+
+    numFilters = eegn_F1
+    F2 = numFilters * eegn_D
+    
+    x = input_2
+    if use_rdwt:
+        x = RDWT_block_(x,
+                        levels=rdwt_levels,
+                        init_wavelet=rdwt_wavelet,
+                        init_dilations=rdwt_init_dilations,
+                        base_kernel_len=rdwt_kernel_len,
+                        use_soft_threshold=rdwt_soft_threshold,
+                        name='rdwt')
+
+    block1 = Conv_block_(input_layer=x, F1=eegn_F1, D=eegn_D,
+                         kernLength=eegn_kernelSize, poolSize=eegn_poolSize,
+                         weightDecay=conv_weightDecay, maxNorm=conv_maxNorm,
+                         in_chans=in_chans, dropout=eegn_dropout)
+    block1 = Lambda(lambda x: x[:, :, -1, :])(block1)
+    
+    #Aggiungiamo un ulteriore blocco di convoluzione per il calcolo del rapporto
+    block1 = Conv1D(filters=F2, kernel_size=3, padding='same', activation='relu',
+                    kernel_regularizer=L2(conv_weightDecay),
+                    kernel_constraint=max_norm(conv_maxNorm))(block1)
+    block1 = BatchNormalization()(block1)
+    block1 = Activation('elu')(block1)
+    block1 = Dropout(eegn_dropout)(block1)
+    
+    
+    sw_concat = []
+    for i in range(n_windows):
+        st = i
+        end = block1.shape[1] - n_windows + i + 1
+        block2 = block1[:, st:end, :]
+    
+        if attention is not None:
+            if attention in ['se', 'cbam']:
+                block2 = Permute((2, 1))(block2)
+                block2 = attention_block(block2, attention)
+                block2 = Permute((2, 1))(block2)
+            else:
+                block2 = attention_block(block2, attention)
+
+        block3 = TCN_block_(input_layer=block2, input_dimension=F2, depth=tcn_depth,
+                            kernel_size=tcn_kernelSize, filters=tcn_filters,
+                            weightDecay=conv_weightDecay, maxNorm=conv_maxNorm,
+                            dropout=tcn_dropout, activation=tcn_activation)
+        block3 = Lambda(lambda x: x[:, -1, :])(block3)
+        
+        
+        if fuse == 'average':
+            sw_concat.append(Dense(n_classes, kernel_regularizer=L2(dense_weightDecay))(block3))
+        elif fuse == 'concat':
+            if i == 0:
+                sw_concat = block3
+            else:
+                sw_concat = Concatenate()([sw_concat, block3])
+
+    if fuse == 'average':
+        if len(sw_concat) > 1:
+            sw_concat = tf.keras.layers.Average()(sw_concat[:])
+        else:
+            sw_concat = sw_concat[0]
+    elif fuse == 'concat':
+        sw_concat = Dense(n_classes, kernel_regularizer=L2(dense_weightDecay))(sw_concat)
+    
+    if from_logits:
+        out = Activation('linear', name='linear')(sw_concat)
+    else:
+        out = Activation('softmax', name='softmax')(sw_concat)
+
+    return Model(inputs=input_1, outputs=out)
 
 #%% The novel proposed model
 def RockNet_(n_classes, in_chans = 22, in_samples = 1125, n_windows = 5, attention = 'mha',
