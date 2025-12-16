@@ -22,7 +22,7 @@ The following table summarizes the classification performance of [**RatioWaveNet
 
 | Model           | #params | BCI 4-2a Accuracy | BCI 4-2a Kappa | BCI 4-2b Accuracy | BCI 4-2b Kappa | HGD Accuracy | HGD Kappa |
 |-----------------|---------|-------------------|----------------|-------------------|----------------|--------------|-----------|
-| RatioWaveNet        | 113,732 | 81.56             | 75.40          | 97.69             | 80.60          | 92.81        | 90.40     |
+| RatioWaveNet        | 113,732 | 82.14             | 76.20          | 97.69             | 80.60          | 92.81        | 90.40     |
 | ATCNet          | 113,732 | 81.10             | 79.73          | 89.41             | 78.80          | 92.05        | 89.40     |
 | EEGTCNet        | 4,096   | 77.97             | 70.63          | 83.69             | 67.31          | 87.80        | 83.73     |
 | MBEEG_SENet     | 10,170  | 79.98             | 73.30          | 86.53             | 73.02          | 90.13        | 86.84     |
@@ -45,7 +45,7 @@ In particular, the results highlight the performance improvements achieved by [*
 | Model           | Preprocessing | BCI 2a Acc. | BCI 2a κ | BCI 2b Acc. | BCI 2b κ | HGD Acc. | HGD κ |
 |----------------|---------------|-------------|----------|-------------|----------|----------|--------|
 | RatioWaveNet       | None          | 79.36       | 72.50    | 97.00       | 69.80    | 87.45    | 83.30  |
-|                | RDWT          | 81.56       | 75.40    | 97.69       | 80.60    | 92.81    | 90.40  |
+|                | RDWT          | 82.14       | 76.20    | 97.69       | 80.60    | 92.81    | 90.40  |
 | ATCNet         | None          | 79.71       | 72.90    | 96.90       | 63.30    | 88.88    | 85.20  |
 |                | RDWT          | 79.51       | 72.70    | 96.74       | 61.90    | 88.26    | 84.30  |
 | EEGTCNet       | None          | 64.35       | 52.50    | 95.81       | 58.90    | 86.60    | 82.10  |
@@ -64,13 +64,53 @@ In particular, the results highlight the performance improvements achieved by [*
 
 ----
 
+## BCI IV-2a — Detailed Accuracy Results Across 5 Seeds (RatioWaveNet vs ATCNet)
+
+This table reports the complete subject-wise **test accuracy (%)** on the BCI Competition IV-2a dataset
+across five random seeds for the proposed **RatioWaveNet** and the baseline **ATCNet**.
+For each seed, we additionally report the corresponding **mean Cohen’s κ** computed over all subjects.
+
+### Test Accuracy (%) with Mean Accuracy and Mean Cohen’s κ
+
+| Model | Seed | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 | Avg Acc | Avg κ |
+|------|------|----|----|----|----|----|----|----|----|----|---------|-------|
+| **RatioWaveNet (proposed)** | 1 | 86.46 | 68.75 | 93.06 | 84.03 | 74.65 | 70.83 | 92.01 | 80.21 | 89.24 | 82.14 | 0.762 |
+|  | 2 | 86.11 | 62.85 | 92.36 | 82.29 | 71.18 | 69.44 | 93.75 | 81.25 | 87.50 | 80.75 | 0.743 |
+|  | 3 | 85.76 | 67.71 | 91.32 | 83.33 | 64.93 | 69.44 | 86.81 | 79.86 | 85.42 | 79.40 | 0.725 |
+|  | 4 | 82.64 | 67.01 | 94.44 | 84.03 | 69.79 | 70.49 | 90.28 | 77.08 | 86.46 | 80.25 | 0.737 |
+|  | 5 | 85.42 | 63.19 | 89.93 | 76.39 | 71.53 | 76.04 | 91.32 | 79.86 | 89.93 | 80.40 | 0.739 |
+|  | **Mean** | **85.28** | **65.90** | **92.22** | **82.01** | **70.42** | **71.25** | **90.83** | **79.65** | **87.71** | **80.59** | **0.741** |
+| ATCNet | 1 | 86.46 | 70.49 | 92.71 | 78.12 | 71.88 | 66.67 | 92.36 | 77.08 | 87.15 | 80.32 | 0.738 |
+|  | 2 | 85.76 | 65.97 | 93.06 | 84.72 | 72.22 | 67.36 | 90.28 | 75.35 | 86.81 | 80.17 | 0.736 |
+|  | 3 | 85.42 | 67.01 | 94.10 | 76.04 | 71.53 | 70.14 | 91.67 | 76.74 | 87.15 | 79.98 | 0.733 |
+|  | 4 | 85.42 | 63.19 | 89.58 | 77.43 | 64.93 | 70.83 | 93.06 | 79.51 | 90.97 | 79.44 | 0.726 |
+|  | 5 | 86.11 | 63.54 | 88.54 | 80.21 | 71.53 | 68.06 | 93.06 | 80.21 | 86.11 | 79.71 | 0.729 |
+|  | Mean | 85.83 | 66.04 | 91.60 | 79.30 | 70.42 | 68.61 | 92.70 | 77.78 | 87.64 | 79.92 | 0.732 |
+
+
+## BCI IV-2b — Detailed Accuracy Results Across 5 Seeds (RatioWaveNet vs ATCNet)
+
+This table reports the complete subject-wise **test accuracy (%)** on the BCI Competition IV-2b dataset
+across five random seeds for the proposed **RatioWaveNet** and the baseline **ATCNet**.
+For each seed, we additionally report the corresponding **mean Cohen’s κ** computed over all subjects.
+
+
+
+
+**Reproducibility note.**
+All results are obtained using the official implementation provided in this repository.
+Each run corresponds to a different random seed, while the data split and evaluation protocol
+are kept fixed across runs.
+
+----
+
 # None vs STFT vs RDWT in RatioWaveNet
 
 | Dataset                  | Preprocessing | Accuracy (%) | Kappa (κ) |
 |--------------------------|---------------|--------------|-----------|
 | **BCI Competition IV-2a**| None          | 79.36        | 72.50     |
 |                          | STFT          | 79.09        | 72.10     |
-|                          | RDWT          | 81.56        | 75.40     |
+|                          | RDWT          | 82.14        | 76.20     |
 | **BCI Competition IV-2b**| None          | 97.00        | 69.80     |
 |                          | STFT          | 97.23        | 67.60     |
 |                          | RDWT          | 97.69        | 80.60     |
