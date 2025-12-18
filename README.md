@@ -40,7 +40,7 @@ The following table summarizes the classification performance of [**RatioWaveNet
 ----
 # Comparative preprocessing  
 
-The following table presents a comparative analysis of different deep learning models with and without the application of the RDWT (Redundant Discrete Wavelet Transform) preprocessing technique. The evaluation covers three benchmark EEG motor imagery datasets: BCI Competition IV-2a, BCI Competition IV-2b, and the High-Gamma Dataset (HGD). The aim is to assess the impact of RDWT on classification performance (accuracy and Cohen’s kappa score).
+The following table presents a comparative analysis of different deep learning models with and without the application of the RDWT (Rational Dilated Wavelet Transform) preprocessing technique. The evaluation covers three benchmark EEG motor imagery datasets: BCI Competition IV-2a, BCI Competition IV-2b, and the High-Gamma Dataset (HGD). The aim is to assess the impact of RDWT on classification performance (accuracy and Cohen’s kappa score).
 
 In particular, the results highlight the performance improvements achieved by [**RatioWaveNet**](https://github.com/Bonomo31/RatioWaveNet) when combined with the RDWT preprocessing, compared to both its baseline (no preprocessing) and other well-established architectures.
 
