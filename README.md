@@ -64,22 +64,21 @@ In particular, the results highlight the performance improvements achieved by [*
 
 ----
 
-## BCI IV-2a — Detailed Accuracy Results Across 5 Seeds (RatioWaveNet vs ATCNet)
+## Multi-seed robustness (5 runs) — RatioWaveNet vs ATCNet
 
-This table reports the complete subject-wise **test accuracy (%)** on the BCI Competition IV-2a dataset
-across five random seeds for the proposed **RatioWaveNet** and the baseline **ATCNet**.
-For each seed, we additionally report the corresponding **mean Cohen’s κ** computed over all subjects.
+To verify that the reported gains are reproducible (and not due to a lucky initialization), we evaluate both RatioWaveNet and ATCNet across 5 independent random seeds on BCI Competition IV-2a and IV-2b.
+We report subject-wise test accuracy (%) for each run, together with Avg Acc (mean across subjects) and Avg κ (mean Cohen’s κ across subjects). The final Mean row aggregates results across the 5 runs.
 
-### Test Accuracy (%) with Mean Accuracy and Mean Cohen’s κ
+### BCI IV-2a — Detailed test accuracy across 5 seeds
 
 | Model | Seed | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 | Avg Acc | Avg κ |
 |------|------|----|----|----|----|----|----|----|----|----|---------|-------|
-| **RatioWaveNet (proposed)** | 1 | 86.46 | 68.75 | 93.06 | 84.03 | 74.65 | 70.83 | 92.01 | 80.21 | 89.24 | 82.14 | 0.762 |
+| **RatioWaveNet** | 1 | 86.46 | 68.75 | 93.06 | 84.03 | 74.65 | 70.83 | 92.01 | 80.21 | 89.24 | 82.14 | 0.762 |
 |  | 2 | 86.11 | 62.85 | 92.36 | 82.29 | 71.18 | 69.44 | 93.75 | 81.25 | 87.50 | 80.75 | 0.743 |
 |  | 3 | 85.76 | 67.71 | 91.32 | 83.33 | 64.93 | 69.44 | 86.81 | 79.86 | 85.42 | 79.40 | 0.725 |
 |  | 4 | 82.64 | 67.01 | 94.44 | 84.03 | 69.79 | 70.49 | 90.28 | 77.08 | 86.46 | 80.25 | 0.737 |
 |  | 5 | 85.42 | 63.19 | 89.93 | 76.39 | 71.53 | 76.04 | 91.32 | 79.86 | 89.93 | 80.40 | 0.739 |
-|  | **Mean** | **85.28** | **65.90** | **92.22** | **82.01** | **70.42** | **71.25** | **90.83** | **79.65** | **87.71** | **80.59** | **0.741** |
+|  | **Mean** | 85.28 | 65.90 | 92.22 | 82.01 | 70.42 | 71.25 | 90.83 | 79.65 | 87.71 | **80.59** | **0.741** |
 | ATCNet | 1 | 86.46 | 70.49 | 92.71 | 78.12 | 71.88 | 66.67 | 92.36 | 77.08 | 87.15 | 80.32 | 0.738 |
 |  | 2 | 85.76 | 65.97 | 93.06 | 84.72 | 72.22 | 67.36 | 90.28 | 75.35 | 86.81 | 80.17 | 0.736 |
 |  | 3 | 85.42 | 67.01 | 94.10 | 76.04 | 71.53 | 70.14 | 91.67 | 76.74 | 87.15 | 79.98 | 0.733 |
@@ -87,20 +86,32 @@ For each seed, we additionally report the corresponding **mean Cohen’s κ** co
 |  | 5 | 86.11 | 63.54 | 88.54 | 80.21 | 71.53 | 68.06 | 93.06 | 80.21 | 86.11 | 79.71 | 0.729 |
 |  | Mean | 85.83 | 66.04 | 91.60 | 79.30 | 70.42 | 68.61 | 92.70 | 77.78 | 87.64 | 79.92 | 0.732 |
 
+### BCI IV-2b — Detailed test accuracy across 5 seeds
 
-## BCI IV-2b — Detailed Accuracy Results Across 5 Seeds (RatioWaveNet vs ATCNet)
+| Model | Seed | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 | Avg Acc | Avg κ |
+|------|------|----|----|----|----|----|----|----|----|----|---------|-------|
+| **RatioWaveNet** | 1 | 98.94 | 99.10 | 97.46 | 91.11 | 92.31 | 100.00 | 98.89 | 99.28 | 99.13 | 97.36 | 0.656 |
+|  | 2 | 98.94 | 97.30 | 98.91 | 97.78 | 91.67 | 99.53 | 98.52 | 99.64 | 99.13 | 97.93 | 0.732 |
+|  | 3 | 98.94 | 98.20 | 98.91 | 91.11 | 92.95 | 100.00 | 98.15 | 98.19 | 99.13 | 97.29 | 0.665 |
+|  | 4 | 98.94 | 98.20 | 97.83 | 88.89 | 93.59 | 100.00 | 98.89 | 99.28 | 98.70 | 97.14 | 0.617 |
+|  | 5 | 98.94 | 98.20 | 98.19 | 88.89 | 91.03 | 100.00 | 98.15 | 99.64 | 99.57 | 96.95 | 0.649 |
+|  | **Mean**  | 98.94 | 98.20 | 98.26 | 91.56 | 92.31 | 99.81 | 98.52 | 99.21 | 99.13 | **97.34** | **0.664** |
+| ATCNet | 1 | 100.00 | 98.20 | 99.28 | 82.22 | 92.31 | 100.00 | 98.89 | 98.55 | 98.70 | 96.46 | 0.676 |
+|  | 2 | 98.94 | 98.20 | 99.64 | 86.67 | 91.67 | 99.53 | 97.78 | 98.55 | 97.40 | 96.49 | 0.569 |
+|  | 3 | 98.94 | 97.30 | 98.91 | 86.67 | 94.23 | 99.06 | 100.00 | 99.28 | 96.10 | 96.72 | 0.631 |
+|  | 4 | 98.23 | 99.10 | 98.19 | 86.67 | 90.38 | 99.53 | 96.30 | 98.91 | 98.27 | 96.17 | 0.521 |
+|  | 5 | 99.29 | 98.20 | 98.91 | 86.67 | 92.31 | 100.00 | 96.67 | 98.91 | 99.57 | 96.72 | 0.637 |
+|  | Mean | 99.08 | 98.20 | 98.99 | 85.78 | 92.18 | 99.62 | 97.93 | 98.84 | 97.81 | 96.51 | 0.607 |
 
-This table reports the complete subject-wise **test accuracy (%)** on the BCI Competition IV-2b dataset
-across five random seeds for the proposed **RatioWaveNet** and the baseline **ATCNet**.
-For each seed, we additionally report the corresponding **mean Cohen’s κ** computed over all subjects.
+> Takeaway (2b): The task is near-ceiling for both methods, but RatioWaveNet maintains a consistent edge in Avg Acc and, more importantly, a higher Avg κ, which is informative under saturation.
 
 
-
+### **Note**  
+> Multi-seed reporting is particularly relevant in EEG decoding, where outcomes can vary due to stochastic training (initialization, mini-batch ordering, etc.). These tables are meant as a transparency/reproducibility check, aligned with the experimental protocol discussed in the paper.
 
 **Reproducibility note.**
-All results are obtained using the official implementation provided in this repository.
-Each run corresponds to a different random seed, while the data split and evaluation protocol
-are kept fixed across runs.
+All RatioWaveNet results are obtained using the implementation released in this repository.
+ATCNet results are recomputed using the official ATCNet repository, without modifying the original architecture. For both models, we adopt the same data split, preprocessing pipeline, and evaluation protocol. Each run differs only by the random seed (affecting weight initialization and training stochasticity), ensuring a fair and reproducible comparison.
 
 ----
 
