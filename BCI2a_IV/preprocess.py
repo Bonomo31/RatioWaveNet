@@ -80,108 +80,72 @@ def load_data_LOSO (data_path, subject, dataset):
 
     return X_train, y_train, X_test, y_test
 
-"""
-def load_data_LOSO(data_path, subject, dataset):
-    X_train_list, y_train_list = [], []
-    X_test, y_test = None, None
-
-    for sub in range(14):
-        path = data_path + '/'
-        X1, y1 = load_HGD_data(path, sub+1, True)
-        X2, y2 = load_HGD_data(path, sub+1, False)
-
-        if sub == subject:
-            # SOLO sessione 2 del left-out
-            X_test, y_test = X2, y2
-        else:
-            # SOLO sessione 1 degli altri
-            X_train_list.append(X1)
-            y_train_list.append(y1)
-
-    X_train = np.concatenate(X_train_list, axis=0)
-    y_train = np.concatenate(y_train_list, axis=0)
-
-    return X_train, y_train, X_test, y_test
-"""
 
 #%%
-def scale(signal, sigma=0.1):
-    factor = np.random.normal(loc=1.0, scale=sigma, size=(signal.shape[0], 1))
-    return signal * factor
-
-def time_shift(signal, max_shift=10):
-    shift = np.random.randint(-max_shift, max_shift)
-    return np.roll(signal, shift, axis=1)
-
-def permute(signal, n_segments=4):
-    segs = np.array_split(signal, n_segments, axis=1)
-    np.random.shuffle(segs)
-    return np.concatenate(segs, axis=1)
-
-import os
-import numpy as np
-import scipy.io as sio
-from sklearn.utils import resample
-
-def add_jitter(signal, sigma=0.02):
-    noise = np.random.normal(loc=0.0, scale=sigma, size=signal.shape)
-    return signal + noise
-
-def load_BCI2a_data(data_path, subject, training, all_trials=True,
-                    window_sec=4.5, step_sec=0.5, augment=False, balance=False):
-    fs = 250
-    window_samples = int(window_sec * fs)
-    step_samples = int(step_sec * fs)
+def load_BCI2a_data(data_path, subject, training, all_trials = True):
+    """ Loading and Dividing of the data set based on the subject-specific 
+    (subject-dependent) approach.
+    In this approach, we used the same training and testing dataas the original
+    competition, i.e., 288 x 9 trials in session 1 for training, 
+    and 288 x 9 trials in session 2 for testing.  
+   
+        Parameters
+        ----------
+        data_path: string
+            dataset path
+            # Dataset BCI Competition IV-2a is available on 
+            # http://bnci-horizon-2020.eu/database/data-sets
+        subject: int
+            number of subject in [1, .. ,9]
+        training: bool
+            if True, load training data
+            if False, load testing data
+        all_trials: bool
+            if True, load all trials
+            if False, ignore trials with artifacts 
+    """
+    
+    # Define MI-trials parameters
     n_channels = 22
+    n_tests = 6*48     
+    window_Length = 7*250 
+    
+    # Define MI trial window 
+    fs = 250          # sampling rate
+    t1 = int(1.5*fs)  # start time_point
+    t2 = int(6*fs)    # end time_point
 
-    # 🔹 Caricamento file .mat
-    filename = f'A0{subject}T.mat' if training else f'A0{subject}E.mat'
-    full_path = os.path.join(data_path, filename)
-    if not os.path.exists(full_path):
-        raise FileNotFoundError(f"File {full_path} non trovato.")
-    a = sio.loadmat(full_path)
+    class_return = np.zeros(n_tests)
+    data_return = np.zeros((n_tests, n_channels, window_Length))
+
+    NO_valid_trial = 0
+    if training:
+        a = sio.loadmat(data_path+'A0'+str(subject)+'T.mat')
+    else:
+        a = sio.loadmat(data_path+'A0'+str(subject)+'E.mat')
     a_data = a['data']
+    for ii in range(0,a_data.size):
+        a_data1 = a_data[0,ii]
+        a_data2= [a_data1[0,0]]
+        a_data3= a_data2[0]
+        a_X         = a_data3[0]
+        a_trial     = a_data3[1]
+        a_y         = a_data3[2]
+        a_artifacts = a_data3[5]
 
-    data_list = []
-    label_list = []
+        for trial in range(0,a_trial.size):
+             if(a_artifacts[trial] != 0 and not all_trials):
+                 continue
+             data_return[NO_valid_trial,:,:] = np.transpose(a_X[int(a_trial[trial]):(int(a_trial[trial])+window_Length),:22])
+             class_return[NO_valid_trial] = int(a_y[trial])
+             NO_valid_trial +=1        
+    
 
-    for ii in range(a_data.size):
-        a_data1 = a_data[0, ii][0, 0]
-        a_X = a_data1[0]        # EEG signals
-        a_trial = a_data1[1]    # Trial start positions
-        a_y = a_data1[2]        # Labels
-        a_artifacts = a_data1[5]  # Artifact flags
-
-        for trial in range(a_trial.size):
-            # 🔹 Salta i trial con artefatti, se richiesto
-            if a_artifacts[trial] != 0 and not all_trials:
-                continue
-
-            # 🔹 Segmentazione con finestra mobile
-            start = int(a_trial[trial]) + int(1.5 * fs)
-            end = int(a_trial[trial]) + int(6 * fs)
-
-            for t in range(start, end - window_samples + 1, step_samples):
-                segment = a_X[t:t + window_samples, :n_channels].T
-
-                # 🔹 Normalizzazione per canale
-                segment = (segment - np.mean(segment, axis=1, keepdims=True)) / \
-                          (np.std(segment, axis=1, keepdims=True) + 1e-6)
-
-                # 🔹 Data Augmentation (solo in training)
-                if training and augment:
-                    #print("[INFO] Data Augmentation in corso...")
-                    if np.random.rand() < 0.4:
-                        segment = add_jitter(segment, sigma=0.02)
-
-                data_list.append(segment)
-                label_list.append(int(a_y[trial]) - 1)  # Etichette da 0 a 3
-
-    data_return = np.stack(data_list)
-    class_return = np.array(label_list)
+    data_return = data_return[0:NO_valid_trial, :, t1:t2]
+    class_return = class_return[0:NO_valid_trial]
+    class_return = (class_return-1).astype(int)
 
     return data_return, class_return
-
 
 
 
@@ -369,8 +333,8 @@ def get_data(path, subject, dataset = 'BCI2a', classes_labels = 'all', LOSO = Fa
         """
         if (dataset == 'BCI2a'):
             path = path + 's{:}/'.format(subject+1)
-            X_train, y_train = load_BCI2a_data(path, subject+1, True,augment=True,balance=True)
-            X_test, y_test = load_BCI2a_data(path, subject+1, False,augment=False,balance=False)
+            X_train, y_train = load_BCI2a_data(path, subject+1, True)
+            X_test, y_test = load_BCI2a_data(path, subject+1, False)
         elif (dataset == 'CS2R'):
             X_train, y_train, _, _, _ = load_CS2R_data_v2(path, subject, True, classes_labels)
             X_test, y_test, _, _, _ = load_CS2R_data_v2(path, subject, False, classes_labels)

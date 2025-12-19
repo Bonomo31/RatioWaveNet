@@ -29,3 +29,5 @@ provacommands.ipynb
 BCI2a_IV/RatioWaveNet_RDWT_None_STFT_BCI2a.ipynb
 BCI2a_IV/resultsRatioWaveNet_RDWT
 BCI2a_IV/RDWTvsNone_BCI2a.txt
+BCI2a_IV/preprocessRatioWaveNet.py
+HGD/preprocess_HGD_RatioWaveNet.py

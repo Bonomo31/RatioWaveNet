@@ -78,21 +78,17 @@ def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
     
     log.info("Loading data...")
     cnt = loader.load()
-    
-    # Salviamo il canale di stimolazione prima di eliminarlo
-    stim_channel = cnt.copy().pick_channels(['STI 014'])
 
-
+    # Cleaning: First find all trials that have absolute microvolt values
+    # larger than +- 800 inside them and remember them for removal later
     log.info("Cutting trials...")
 
-    marker_def = OrderedDict([('Right Hand', [2]), ('Left Hand', [4],),
-                              ('Rest', [6]), ('Feet', [8])])
-    clean_ival = [0, 3000]
+    marker_def = OrderedDict([('Right Hand', [1]), ('Left Hand', [2],),
+                              ('Rest', [3]), ('Feet', [4])])
+    clean_ival = [0, 4000]
 
     set_for_cleaning = create_signal_target_from_raw_mne(cnt, marker_def,
                                                   clean_ival)
-
-
 
     clean_trial_mask = np.max(np.abs(set_for_cleaning.X), axis=(1, 2)) < 800
 
@@ -100,8 +96,6 @@ def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
         np.sum(clean_trial_mask),
         len(set_for_cleaning.X),
         np.mean(clean_trial_mask) * 100))
-    
-
 
     # now pick only sensors with C in their name
     # as they cover motor cortex
@@ -117,69 +111,27 @@ def load_HGD_data(data_path, subject, training, low_cut_hz =0, debug = False):
                  'CCP2h', 'CPP1h', 'CPP2h']
     if debug:
         C_sensors = load_sensor_names
-    # Ora selezioniamo solo i canali EEG
     cnt = cnt.pick_channels(C_sensors)
-    
-    # Riaggiungiamo il canale di stimolazione
-    cnt = cnt.add_channels([stim_channel])
 
+    # Further preprocessings as descibed in paper
     log.info("Resampling...")
-
     cnt = resample_cnt(cnt, 250.0)
-
     log.info("Highpassing...")
-
-
     cnt = mne_apply(
         lambda a: highpass_cnt(
             a, low_cut_hz, cnt.info['sfreq'], filt_order=3, axis=1),
         cnt)
-
-
-    picks = [cnt.info['ch_names'].index(channel) for channel in C_sensors if channel in cnt.info['ch_names']]
-
-    # Seleziona solo i canali desiderati dal Raw object
-    cnt_selected = cnt.copy().pick(picks)
-
-    # Log per indicare che la standardizzazione sta iniziando
     log.info("Standardizing...")
+    cnt = mne_apply(
+        lambda a: exponential_running_standardize(a.T, factor_new=1e-3,
+                                                  init_block_size=1000,
+                                                  eps=1e-4).T,
+        cnt)
 
-    # Esegui la standardizzazione solo sui canali selezionati
-    cnt_selected_data = cnt_selected.get_data()
-
-    cnt_selected_data = exponential_running_standardize(cnt_selected_data.T, 
-                                                    factor_new=1e-3, 
-                                                    init_block_size=1000, 
-                                                    eps=1e-4).T
-
-    # Aggiorna i dati nel Raw object `cnt` solo per i canali selezionati
-    cnt._data[picks, :] = cnt_selected_data
-
+    # Trial interval, start at -500 already, since improved decoding for networks
     ival = [-500, 4000]
-    
 
     dataset = create_signal_target_from_raw_mne(cnt, marker_def, ival)
-
     dataset.X = dataset.X[clean_trial_mask]
     dataset.y = dataset.y[clean_trial_mask]
-    dataset.X = dataset.X[:, :-1]
-    
-    
-    # Normalizzazione channel-wise
-    if subject != 14:
-        print("[INFO] Normalizing channel-wise for subject {}...".format(subject))
-        dataset.X = (dataset.X - dataset.X.mean(axis=2, keepdims=True)) / (dataset.X.std(axis=2, keepdims=True) + 1e-5)
-    else:
-        print("[INFO] Skipping normalization for subject 14.")
-        
-    # Rumore gaussiano + sinusoidi + scaling
-    if training and subject != 14:
-        print("[INFO] Adding standard augmentation for subject {}...".format(subject))
-        dataset.X += np.random.normal(0, 0.01, dataset.X.shape)
-        dataset.X += 0.005 * np.sin(2 * np.pi * np.random.rand(*dataset.X.shape))
-        scaling = np.random.uniform(0.9, 1.1, (dataset.X.shape[0], 1, 1))
-        dataset.X *= scaling
-    elif subject == 14:
-        print("[INFO] Skipping augmentation for subject 14.")
-    
     return dataset.X, dataset.y
