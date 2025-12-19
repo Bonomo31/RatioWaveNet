@@ -67,10 +67,11 @@ In particular, the results highlight the performance improvements achieved by [*
 
 ----
 
-## Multi-seed robustness (5 runs) — RatioWaveNet vs ATCNet
+## Multi-seed robustness (multiple runs) — RatioWaveNet vs ATCNet
 
-To verify that the reported gains are reproducible (and not due to a lucky initialization), we evaluate both RatioWaveNet and ATCNet across 5 independent random seeds on BCI Competition IV-2a and IV-2b.
-We report subject-wise test accuracy (%) for each run, together with Avg Acc (mean across subjects) and Avg κ (mean Cohen’s κ across subjects). The final Mean row aggregates results across the 5 runs.
+To assess robustness to training stochasticity (i.e., to ensure that the observed improvements are not driven by a favorable initialization), we evaluate **RatioWaveNet** and **ATCNet** across multiple independent random seeds on three benchmarks: **BCI Competition IV-2a**, **BCI Competition IV-2b**, and the **High-Gamma Dataset (HGD)**.  
+We report subject-wise test accuracy (\%) for each run, together with **Avg Acc** (mean accuracy across subjects) and **Avg κ** (mean Cohen’s κ across subjects). The final **Mean** row summarizes results across runs (5 seeds for BCI IV-2a and IV-2b; 3 seeds for HGD).
+
 
 ### BCI IV-2a — Detailed test accuracy across 5 seeds
 
@@ -107,6 +108,20 @@ We report subject-wise test accuracy (%) for each run, together with Avg Acc (me
 |  | Mean | 99.08 | 98.20 | 98.99 | 85.78 | 92.18 | 99.62 | 97.93 | 98.84 | 97.81 | 96.51 | 0.607 |
 
 > Takeaway (2b): The task is near-ceiling for both methods, but RatioWaveNet maintains a consistent edge in Avg Acc and, more importantly, a higher Avg κ, which is informative under saturation.
+
+### HGD — Detailed test accuracy across 3 seeds
+
+| Model | Seed | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 | S10 | S11 | S12 | S13 | S14 | Avg Acc | Avg κ |
+|------|------|----|----|----|----|----|----|----|----|----|-----|-----|-----|-----|-----|---------|-------|
+| **RatioWaveNet** | 1 | 92.50 | 94.38 | 96.88 | 97.50 | 91.88 | 89.38 | 92.45 | 91.88 | 95.00 | 90.62 | 77.50 | 93.75 | 90.62 | 70.62 | 90.35 | 0.871 |
+|  | 2 | 88.12 | 95.00 | 99.38 | 97.50 | 90.62 | 90.00 | 89.94 | 90.62 | 95.00 | 93.12 | 83.12 | 92.50 | 89.38 | 79.38 | 90.98 | 0.880 |
+|  | 3 | 88.75 | 95.00 | 98.75 | 98.12 | 93.12 | 90.62 | 90.57 | 93.12 | 95.62 | 91.88 | 81.88 | 94.38 | 89.38 | 81.25 | 91.60 | 0.888 |
+|  | **Mean** | **89.79** | **94.79** | **98.34** | **97.71** | **91.87** | **90.00** | **90.99** | **91.87** | **95.21** | **91.87** | **80.83** | **93.54** | **89.79** | **77.08** | **90.98** | **0.880** |
+| ATCNet | 1 | 85.00 | 85.62 | 96.25 | 98.12 | 88.12 | 92.50 | 92.45 | 86.25 | 91.25 | 89.38 | 75.62 | 88.75 | 90.62 | 78.12 | 88.43 | 0.846 |
+|  | 2 | 82.50 | 86.25 | 95.00 | 96.25 | 86.25 | 93.75 | 88.05 | 92.50 | 95.00 | 86.25 | 75.00 | 91.25 | 93.12 | 76.88 | 88.43 | 0.846 |
+|  | 3 | 83.75 | 87.50 | 96.88 | 97.50 | 88.75 | 94.38 | 90.57 | 88.12 | 89.38 | 88.75 | 78.75 | 89.38 | 85.00 | 68.12 | 87.63 | 0.835 |
+|  | Mean | 83.75 | 86.46 | 96.04 | 97.29 | 87.71 | 93.54 | 90.36 | 88.96 | 91.21 | 88.13 | 76.46 | 89.79 | 89.58 | 74.37 | 88.17 | 0.842 |
+
 
 
 ### **Note**  
