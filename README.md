@@ -14,7 +14,7 @@ The final version of the article is available on ScienceDirect via the following
 
 https://doi.org/10.1016/j.array.2026.100961
 
-Authors : Giuseppe Bonomo, Marco Siino, Rosario Sorbello
+Authors : Giuseppe Bonomo, Marco Siino, Rosario Sorbello, Ilenia Tinnirello
 
 University of Palermo, Italia 
 
