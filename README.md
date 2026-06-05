@@ -5,7 +5,14 @@
 	<img src="Schema_EEG.png" alt="Schema EEG" width="600"/>
 </p>
 
-RatioWaveNet is a custom deep learning architecture designed for the classification of EEG signals in Motor Imagery (MI) tasks. Inspired by existing models like EEGNet and ATCNet, RatioWaveNet introduces a lightweight CNN framework enhanced with residual connections, dropout, and optimized temporal feature extraction.
+RatioWaveNet is a custom deep learning architecture designed for the classification of EEG signals in Motor Imagery (MI) tasks. Inspired by existing models like EEGNet and ATCNet, RatioWaveNet introduces a lightweight CNN framework enhanced with residual connections, dropout, and optimized temporal feature extraction. 
+
+## Publication
+
+The RatioWaveNet study has been published in **Array**.
+The final version of the article is available on ScienceDirect via the following DOI:
+
+https://doi.org/10.1016/j.array.2026.100961
 
 Authors : Giuseppe Bonomo, Marco Siino, Rosario Sorbello
 
